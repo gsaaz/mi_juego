@@ -31,31 +31,36 @@ def ejecutar_juego():
         # (a) EVENTOS (Interacción del Usuario con la PC)
         
         for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
-            # CASO 1: Si el usuario presiona la "X" roja para cerrar la ventana...
-                corriendo = False        # Rompe el bucle while y apaga el juego
-            
-            if evento.type == pygame.MOUSEBUTTONDOWN:
-            # CASO 2: Si el usuario hace un clic con cualquiera de los botones del mouse...
-                if evento.button == 1:   # Control de entrada: 1 significa Clic Izquierdo
-                    mouse_x, mouse_y = evento.pos               # Extrae las coordenadas exactas del cursor
-                    moneda_recogida = False
-                    
-                    for moneda in lista_monedas:
-                        hitbox_moneda = pygame.Rect(moneda.x, moneda.y, moneda.ancho, moneda.largo)
-                        if hitbox_moneda.collidepoint(evento.pos):
-                            dinero += 20
-                            lista_monedas.remove(moneda)
-                            moneda_recogida = True
-                            break
-                    
-                    if not moneda_recogida:
-                        if dinero >= 5:
-                            dinero -= 5
-                            nueva_comida = Comida(mouse_x, mouse_y,"A")     # Instanciamos una nueva comida
-                            lista_comidas.append(nueva_comida)          # Guardamos la comida dentro de nuestra lista global
-                        else:
-                                frames_alerta_dinero = 120
+             if evento.type == pygame.QUIT:
+                  corriendo = False
+                  continue
+             
+             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                pos_mouse = evento.pos
+
+                # CAPA 1: INTERFAZ DE USUARIO
+
+                # CAPA 2: OBJETOS INTERACTIVOS
+                moneda_recogida = False
+                for moneda in lista_monedas:
+                    hitbox_moneda = pygame.Rect(moneda.x, moneda.y, moneda.ancho, moneda.largo)
+                    if hitbox_moneda.collidepoint(pos_mouse):
+                        dinero += 20
+                        lista_monedas.remove()
+                        moneda_recogida = True
+                        break
+                
+                if moneda_recogida:
+                     continue
+                
+                # CAPA 3: ACCIONES DEL MUNDO
+                if dinero < 5:
+                     frames_alerta_dinero = 120
+                     continue
+                
+                dinero -= 5
+                nueva_comida = Comida(pos_mouse[0],pos_mouse[1],"A")
+                lista_comidas.append(nueva_comida)
 
         # (b) ACTUALIZAR
         for brainrot in lista_brainrots:
