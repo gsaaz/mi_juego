@@ -5,7 +5,7 @@ from src.constantes import LINEA_HORIZONTE, ALTO, MARRON
 class Comida:
 # Modela el comportamiento y las dimensiones de la comida
 
-    def __init__(self, x, y, tipo):
+    def __init__(self, x, y):
     # Inicializa las dimensiones, la velocidad y calcula el punto exacto de aterrizaje aleatorio dentro de la zona terrestre.\
         # Dimension fisica
         self.ancho = 15
@@ -20,8 +20,6 @@ class Comida:
         
         # Selecciona un punto aleatorio en el eje Y que esté estrictamente dentro del pasto.
         self.y_destino = random.randint(LINEA_HORIZONTE, ALTO-100)
-
-        self.tipo = tipo
     
     def caer(self):
     # Desplaza la comida verticalmente hacia abajo y activa un anclaje rígido en el momento en que toca su coordenada de destino.
