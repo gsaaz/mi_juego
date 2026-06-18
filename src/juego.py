@@ -1,8 +1,9 @@
 import pygame
 from src.constantes import (ANCHO, ALTO, LINEA_HORIZONTE, FPS, 
                             NEGRO, ROJO, CELESTE, VERDE_PASTO)
-from src.brainrot import Brainrot
+from src.brainrot import Brainrot, BrainrotA, BrainrotB, BrainrotC
 from src.comida import Comida
+from src.interfaz import dibujar_hud_brainrot
 
 def ejecutar_juego():
     pygame.init() # Despierta submodulos internos de Pygame
@@ -13,11 +14,15 @@ def ejecutar_juego():
     fuente_chica = pygame.font.SysFont("Arial", 22)
 
     # Entidades y Estado
-    mi_criatura = Brainrot(400, 300) # Creamos a nuestro primer brainrot
+    lista_brainrots = [] # Creamos a nuestro primer brainrot
     lista_comidas = [] # Creamos la lista dinámica que guardará las galletas vivas
     lista_monedas = []
     dinero = 100
     frames_alerta_dinero = 0
+
+    lista_brainrots.append(BrainrotA(400,350))
+    lista_brainrots.append(BrainrotB(400,350))
+    lista_brainrots.append(BrainrotC(400,350))
 
     corriendo = True  # Variable de control (Flag) que mantiene el juego encendido
     while corriendo:
@@ -47,16 +52,17 @@ def ejecutar_juego():
                     if not moneda_recogida:
                         if dinero >= 5:
                             dinero -= 5
-                            nueva_comida = Comida(mouse_x, mouse_y)     # Instanciamos una nueva comida
+                            nueva_comida = Comida(mouse_x, mouse_y,"A")     # Instanciamos una nueva comida
                             lista_comidas.append(nueva_comida)          # Guardamos la comida dentro de nuestra lista global
                         else:
                                 frames_alerta_dinero = 120
 
         # (b) ACTUALIZAR
-        if mi_criatura.vivo:
-            mi_criatura.buscar_comida_cercana(lista_comidas)
-            mi_criatura.mover(lista_comidas) # Pasamos la lista corregida aquí
-            mi_criatura.vivir(lista_monedas)
+        for brainrot in lista_brainrots:
+            if brainrot.vivo:
+                brainrot.buscar_comida_cercana(lista_comidas)
+                brainrot.mover(lista_comidas) # Pasamos la lista corregida aquí
+                brainrot.vivir(lista_monedas)
             
         for comida in lista_comidas:
             comida.caer()
@@ -78,9 +84,10 @@ def ejecutar_juego():
         pygame.draw.rect(ventana, VERDE_PASTO, (0, LINEA_HORIZONTE, ANCHO, ALTO - LINEA_HORIZONTE))
         # Dibujamos el rectángulo verde que representa el jardín terrestre
 
-        if mi_criatura.vivo:
-                mi_criatura.dibujar(ventana)
-                mi_criatura.dibujar_info(ventana, fuente_chica)
+        for brainrot in lista_brainrots:
+            if brainrot.vivo:
+                    brainrot.dibujar(ventana)
+                    dibujar_hud_brainrot(ventana,fuente_chica,brainrot)
         # Le ordenamos a la criatura que dibuje su cuerpo blanco en la ventana
         # Dibujamos el texto flotante con las estadísticas vitales de la mascota
 
@@ -94,7 +101,3 @@ def ejecutar_juego():
         # Envía el lienzo finalizado a la tarjeta de video para que lo muestre en el monitor
 
 pygame.quit() # Apaga los submódulos de Pygame de forma ordenada para evitar que la ventana se congele
-
-    
-
-

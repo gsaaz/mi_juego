@@ -1,6 +1,6 @@
 import pygame
 import random
-from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO
+from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO, AZUL_NIEBLA, KHAKI, ROSADO
 from src.moneda import Moneda
 
 class Brainrot:
@@ -8,9 +8,10 @@ class Brainrot:
     
     def __init__(self, x, y):
     # Se ejecuta al instanciar el personaje
-        # Dimension fisica
+        # Atributos fisicos
         self.ancho = 50
         self.alto = 50
+        self.color = BLANCO
         
         # Posicion espacial
         self.x = x
@@ -21,7 +22,7 @@ class Brainrot:
         self.vy = 2
         
         # Atributos biologicos
-        self.hambre = 0
+        self.hambre = 100
         self.salud = 100
         self.edad = 0
         
@@ -182,14 +183,42 @@ class Brainrot:
     
     def dibujar(self, superficie): 
     # Dibuja el cuerpo de la criatura en la pantalla del juego.
-         pygame.draw.rect(superficie, BLANCO, (int(self.x), int(self.y), self.ancho, self.alto))
+         pygame.draw.rect(superficie, self.color, (int(self.x), int(self.y), self.ancho, self.alto))
          # Convertimos self.x y self.y a enteros (int) porque las pantallas no pueden pintar "medios píxeles"
+
+class BrainrotA(Brainrot):
+    # Clase hija A
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.color = AZUL_NIEBLA
+        self.tipo_dieta = "A"
     
-    def dibujar_info(self, superficie, fuente):
-    # Muestra las estadísticas biológicas flotando justo arriba de la cabeza de la mascota.
-        texto_hambre = f"Hambre: {int(self.hambre)}% | Salud: {int(self.salud)}%"
-        # Creamos el texto y truncamos los decimales usando int() para que el usuario no vea números feos como "Hambre: 74.328392%"
-        imagen_texto = fuente.render(texto_hambre, True, BLANCO)
-        # Convertimos la cadena de caracteres en una imagen de píxeles
-        superficie.blit(imagen_texto, (int(self.x) - 100, int(self.y) - 25))
-        # Estampamos la imagen del texto en la ventana
+    def buscar_comida_cercana(self, lista_comidas):
+        comidas_que_me_gustan = [c for c in lista_comidas if c.tipo == self.tipo_dieta]
+
+        super().buscar_comida_cercana(comidas_que_me_gustan)
+
+class BrainrotB(Brainrot):
+    # Clase hija B
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.color = KHAKI
+        self.tipo_dieta = "B"
+    
+    def buscar_comida_cercana(self, lista_comidas):
+        comidas_que_me_gustan = [c for c in lista_comidas if c.tipo == self.tipo_dieta]
+
+        super().buscar_comida_cercana(comidas_que_me_gustan)
+
+
+class BrainrotC(Brainrot):
+    # Clase hija C
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.color = ROSADO
+        self.tipo_dieta = "C"
+    
+    def buscar_comida_cercana(self, lista_comidas):
+        comidas_que_me_gustan = [c for c in lista_comidas if c.tipo == self.tipo_dieta]
+
+        super().buscar_comida_cercana(comidas_que_me_gustan)
