@@ -1,7 +1,7 @@
 import pygame
 import random
 from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO, AZUL_NIEBLA, KHAKI, ROSADO
-from src.moneda import Moneda
+from src.moneda import Moneda, ANCHO_MONEDA
 
 class Brainrot:
 # Representa las entidades de la villa (brainrots)
@@ -167,9 +167,9 @@ class Brainrot:
             self.vivo = False
         
         if self.salud >= 95 and self.hambre >= 50:
-            self.reloj_moneda += 0.01
+            self.reloj_moneda += 1
             
-            if self.reloj_moneda >= 1200:
+            if self.reloj_moneda >= 300:
                 self.spawnear_monedas(lista_monedas)
                 
                 self.reloj_moneda = 0
@@ -178,8 +178,19 @@ class Brainrot:
             self.reloj_moneda = 0
     
     def spawnear_monedas(self, lista_monedas):
-        nueva_moneda = Moneda(int(self.x), int(self.y))
-        lista_monedas.append(nueva_moneda)
+        # Probabilidades: 70% bronce, 25% plata, 5% oro
+        rand = random.random()
+        if rand < 0.70:
+            tipo = "bronce"
+        elif rand < 0.95:
+            tipo = "plata"
+        else:
+            tipo = "oro"
+        lista_monedas.append(Moneda(
+            int(self.x) + self.ancho // 2 - ANCHO_MONEDA // 2,
+            int(self.y) + self.alto,
+            tipo,
+        ))
     
     def dibujar(self, superficie): 
     # Dibuja el cuerpo de la criatura en la pantalla del juego.
