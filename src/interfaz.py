@@ -7,6 +7,24 @@ def dibujar_hud_brainrot(superficie, fuente, brainrot):
     imagen_texto = fuente.render(texto_hambre, True, BLANCO)
     superficie.blit(imagen_texto, (int(brainrot.x) - 100, int(brainrot.y) - 25))
 
+def dibujar_game_over(superficie):
+    # Superpone la pantalla de derrota cuando no quedan criaturas ni fondos para continuar.
+    capa = pygame.Surface((ANCHO, ALTO))
+    capa.set_alpha(180)
+    capa.fill(NEGRO)
+    superficie.blit(capa, (0, 0))
+
+    fuente_titulo = pygame.font.SysFont("Arial", 56)
+    fuente_sub = pygame.font.SysFont("Arial", 24)
+
+    titulo = fuente_titulo.render("GAME OVER", True, ROJO)
+    subtitulo = fuente_sub.render("Sin brainrots vivos y sin dinero para comprar uno nuevo.", True, BLANCO)
+    instruccion = fuente_sub.render("Haz clic en cualquier lugar para reiniciar.", True, BLANCO)
+
+    superficie.blit(titulo, ((ANCHO - titulo.get_width()) // 2, ALTO // 2 - 70))
+    superficie.blit(subtitulo, ((ANCHO - subtitulo.get_width()) // 2, ALTO // 2 + 10))
+    superficie.blit(instruccion, ((ANCHO - instruccion.get_width()) // 2, ALTO // 2 + 50))
+
 def _centrar_texto(superficie, fuente, texto, rect, color=NEGRO, offset_y=0):
     # Dibuja un texto centrado dentro de un rectángulo.
     imagen = fuente.render(texto, True, color)
