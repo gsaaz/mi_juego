@@ -9,6 +9,7 @@ from src.moneda import Moneda
 from src.fondo import precargar_fondo, dibujar_fondo_cielo
 from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, Tienda
 from src.guardado import guardar_partida, cargar_partida
+from src.menu import MenuInicio
 
 COSTO_BRAINROT = 50
 TAMANO_BLOQUE = 32
@@ -131,8 +132,13 @@ def ejecutar_juego():
     pygame.init() # Despierta submodulos internos de Pygame
     ventana = pygame.display.set_mode((ANCHO, ALTO)) 
     pygame.display.set_caption("Villa Brainrot - Proyecto Final") 
-    Moneda.precargar()
+
     precargar_fondo()
+    menu = MenuInicio(ventana)
+    menu.ejecutar()
+    datos_cargados = menu.obtener_datos_cargados()
+
+    Moneda.precargar()
 
     tile_pasto_base = _cargar_textura_pasto("grass_1")
     tile_pasto_flores = _cargar_textura_pasto("grass_2")
@@ -146,11 +152,7 @@ def ejecutar_juego():
 
     fuente_chica = pygame.font.SysFont("Arial", 22)
 
-    # Carga automática de partida guardada (si existe partida.json).
-    datos_cargados = cargar_partida()
-
     # Entidades y Estado
-    lista_brainrots = []
     lista_comidas = [] # Creamos la lista dinámica que guardará las galletas vivas
     lista_monedas = []
     frames_alerta_dinero = 0
