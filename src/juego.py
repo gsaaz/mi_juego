@@ -7,9 +7,10 @@ from src.brainrot import BrainrotA, BrainrotB, BrainrotC
 from src.comida import Comida
 from src.moneda import Moneda
 from src.fondo import precargar_fondo, dibujar_fondo_cielo
-from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, Tienda
+from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, dibujar_indicador_monedas, Tienda
 from src.guardado import guardar_partida, cargar_partida
 from src.menu import MenuInicio
+from src.fuentes import obtener_fuente, TAMANO_NORMAL
 
 COSTO_BRAINROT = 50
 TAMANO_BLOQUE = 32
@@ -150,7 +151,7 @@ def ejecutar_juego():
 
     reloj = pygame.time.Clock()
 
-    fuente_chica = pygame.font.SysFont("Arial", 22)
+    fuente_chica = obtener_fuente(TAMANO_NORMAL)
 
     # Entidades y Estado
     lista_comidas = [] # Creamos la lista dinámica que guardará las galletas vivas
@@ -319,20 +320,21 @@ def ejecutar_juego():
         # (c) DIBUJAR
         dibujar_fondo_cielo(ventana)
 
-        texto_dinero = f"Monedas: ${dinero}"
-        imagen_dinero = fuente_chica.render(texto_dinero, True, BLANCO)
-        ventana.blit(imagen_dinero, (20, 20))
+        y_alertas = tienda.panel_superior.bottom + 12
+        hay_alerta_dinero = frames_alerta_dinero > 0
+        hay_alerta_stock = frames_alerta_stock > 0
 
-        if frames_alerta_dinero > 0:
+        if hay_alerta_dinero:
             texto_alerta = "¡FONDOS INSUFICIENTES!"
             imagen_alerta = fuente_chica.render(texto_alerta, True, ROJO)
-            ventana.blit(imagen_alerta, (200, 100))
+            ventana.blit(imagen_alerta, ((ANCHO - imagen_alerta.get_width()) // 2, y_alertas))
             frames_alerta_dinero -= 1
 
-        if frames_alerta_stock > 0:
+        if hay_alerta_stock:
             texto_alerta = "¡SIN STOCK!"
             imagen_alerta = fuente_chica.render(texto_alerta, True, ROJO)
-            ventana.blit(imagen_alerta, (200, 100))
+            y_alerta = y_alertas + 32 if hay_alerta_dinero else y_alertas
+            ventana.blit(imagen_alerta, ((ANCHO - imagen_alerta.get_width()) // 2, y_alerta))
             frames_alerta_stock -= 1
 
         for x, y, imagen_pasto in mapa_prado:
@@ -354,6 +356,7 @@ def ejecutar_juego():
                 comida.dibujar(ventana)
 
         tienda.dibujar(ventana, fuente_chica)
+        dibujar_indicador_monedas(ventana, fuente_chica, dinero, tienda.rect_monedas)
 
         if game_over:
             dibujar_game_over(ventana)
