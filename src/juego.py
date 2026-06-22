@@ -1,13 +1,83 @@
+import os
 import pygame
 import random
 from src.constantes import (ANCHO, ALTO, LINEA_HORIZONTE, FPS, 
-                            NEGRO, ROJO, CELESTE, VERDE_PASTO)
+                            NEGRO, BLANCO, ROJO)
 from src.brainrot import BrainrotA, BrainrotB, BrainrotC
 from src.comida import Comida
+from src.moneda import Moneda
+from src.fondo import precargar_fondo, dibujar_fondo_cielo
 from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, Tienda
 from src.guardado import guardar_partida, cargar_partida
 
 COSTO_BRAINROT = 50
+TAMANO_BLOQUE = 32
+ANCHO_VALLA = 64
+ALTO_VALLA = 48
+OFFSET_VALLA_Y = 16  # La base de la valla se hunde en el pasto (LINEA_HORIZONTE - OFFSET)
+RUTAS_PASTO = [
+    os.path.join(os.path.dirname(__file__), "assets"),
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
+]
+RUTAS_VALLA = [
+    os.path.join(os.path.dirname(__file__), "assets"),
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
+]
+NOMBRES_VALLA = ("valla.png", "valla.jpg", "fence.png", "fence.jpg")
+
+def _resolver_ruta_valla():
+    # Busca el sprite de la valla en src/assets o assets/sprites.
+    for carpeta in RUTAS_VALLA:
+        for nombre in NOMBRES_VALLA:
+            ruta = os.path.join(carpeta, nombre)
+            if os.path.exists(ruta):
+                return ruta
+    raise FileNotFoundError(
+        f"No se encontró la valla (valla.png / fence.jpg) en: {', '.join(RUTAS_VALLA)}"
+    )
+
+def _cargar_valla():
+    # Carga y escala el segmento de valla (3 postes) para repetirlo a lo largo del horizonte.
+    imagen = pygame.image.load(_resolver_ruta_valla()).convert_alpha()
+    return pygame.transform.scale(imagen, (ANCHO_VALLA, ALTO_VALLA))
+
+def _construir_segmentos_valla(sprite_valla):
+    # Precalcula los segmentos de valla para cubrir todo el ancho sin huecos.
+    segmentos = []
+    x = 0
+    while x < ANCHO:
+        ancho_restante = ANCHO - x
+        if ancho_restante >= ANCHO_VALLA:
+            segmentos.append((x, sprite_valla))
+        else:
+            segmentos.append((
+                x,
+                sprite_valla.subsurface((0, 0, ancho_restante, ALTO_VALLA)).copy(),
+            ))
+        x += ANCHO_VALLA
+    return segmentos
+
+def _dibujar_valla(superficie, segmentos_valla):
+    # Pinta la cerca sobre el horizonte, tapando la unión entre cielo y pasto.
+    pos_y = LINEA_HORIZONTE - OFFSET_VALLA_Y
+    for x, imagen in segmentos_valla:
+        superficie.blit(imagen, (x, pos_y))
+
+def _resolver_ruta_textura(nombre_base):
+    # Busca la textura en src/assets o assets/sprites (.jpg o .png).
+    for carpeta in RUTAS_PASTO:
+        for extension in (".jpg", ".jpeg", ".png"):
+            ruta = os.path.join(carpeta, f"{nombre_base}{extension}")
+            if os.path.exists(ruta):
+                return ruta
+    raise FileNotFoundError(
+        f"No se encontró la textura '{nombre_base}' en: {', '.join(RUTAS_PASTO)}"
+    )
+
+def _cargar_textura_pasto(nombre_base):
+    # Carga una textura del prado y la escala a un bloque de 32×32 píxeles.
+    imagen = pygame.image.load(_resolver_ruta_textura(nombre_base)).convert()
+    return pygame.transform.scale(imagen, (TAMANO_BLOQUE, TAMANO_BLOQUE))
 
 def _es_game_over(dinero, lista_brainrots):
     # Derrota: no hay criaturas vivas y no alcanza el dinero para comprar una nueva.
@@ -30,11 +100,49 @@ def _iniciar_partida_nueva(tienda):
         "lista_monedas": [],
     }
 
+def _celda_textura(textura, ancho, alto):
+    # Ajusta el bloque al borde del prado (solo al generar el mapa, no en el bucle de dibujo).
+    if ancho == TAMANO_BLOQUE and alto == TAMANO_BLOQUE:
+        return textura
+    return textura.subsurface((0, 0, ancho, alto)).copy()
+
+def _generar_mapa_prado(tile_pasto_base, tile_pasto_flores, tile_pasto_alto):
+    # Construye una sola vez la matriz estática del prado (85% base, 10% flores, 5% alto).
+    mapa_prado = []
+
+    for y in range(LINEA_HORIZONTE, ALTO, TAMANO_BLOQUE):
+        for x in range(0, ANCHO, TAMANO_BLOQUE):
+            ancho = min(TAMANO_BLOQUE, ANCHO - x)
+            alto = min(TAMANO_BLOQUE, ALTO - y)
+            probabilidad = random.random()
+
+            if probabilidad < 0.85:
+                textura = tile_pasto_base
+            elif probabilidad < 0.95:
+                textura = tile_pasto_flores
+            else:
+                textura = tile_pasto_alto
+
+            mapa_prado.append((x, y, _celda_textura(textura, ancho, alto)))
+
+    return mapa_prado
+
 def ejecutar_juego():
     pygame.init() # Despierta submodulos internos de Pygame
     ventana = pygame.display.set_mode((ANCHO, ALTO)) 
     pygame.display.set_caption("Villa Brainrot - Proyecto Final") 
-    reloj = pygame.time.Clock()  
+    Moneda.precargar()
+    precargar_fondo()
+
+    tile_pasto_base = _cargar_textura_pasto("grass_1")
+    tile_pasto_flores = _cargar_textura_pasto("grass_2")
+    tile_pasto_alto = _cargar_textura_pasto("grass_3")
+    mapa_prado = _generar_mapa_prado(tile_pasto_base, tile_pasto_flores, tile_pasto_alto)
+
+    sprite_valla = _cargar_valla()
+    segmentos_valla = _construir_segmentos_valla(sprite_valla)
+
+    reloj = pygame.time.Clock()
 
     fuente_chica = pygame.font.SysFont("Arial", 22)
 
@@ -165,7 +273,7 @@ def ejecutar_juego():
                 for moneda in lista_monedas:
                     hitbox_moneda = pygame.Rect(moneda.x, moneda.y, moneda.ancho, moneda.largo)
                     if hitbox_moneda.collidepoint(pos_mouse):
-                        dinero += 35
+                        dinero += moneda.valor
                         lista_monedas.remove(moneda)
                         moneda_recogida = True
                         break
@@ -200,15 +308,17 @@ def ejecutar_juego():
             for comida in lista_comidas:
                 comida.caer()
 
+            for moneda in lista_monedas:
+                moneda.actualizar()
+
             if _es_game_over(dinero, lista_brainrots):
                 game_over = True
     
         # (c) DIBUJAR
-        # Pintamos toda la ventana de celeste para borrar los dibujos del frame anterior
-        ventana.fill((CELESTE))
+        dibujar_fondo_cielo(ventana)
 
         texto_dinero = f"Monedas: ${dinero}"
-        imagen_dinero = fuente_chica.render(texto_dinero, True, NEGRO)
+        imagen_dinero = fuente_chica.render(texto_dinero, True, BLANCO)
         ventana.blit(imagen_dinero, (20, 20))
 
         if frames_alerta_dinero > 0:
@@ -223,8 +333,10 @@ def ejecutar_juego():
             ventana.blit(imagen_alerta, (200, 100))
             frames_alerta_stock -= 1
 
-        pygame.draw.rect(ventana, VERDE_PASTO, (0, LINEA_HORIZONTE, ANCHO, ALTO - LINEA_HORIZONTE))
-        # Dibujamos el rectángulo verde que representa el jardín terrestre
+        for x, y, imagen_pasto in mapa_prado:
+            ventana.blit(imagen_pasto, (x, y))
+
+        _dibujar_valla(ventana, segmentos_valla)
 
         for brainrot in lista_brainrots:
             if brainrot.vivo:
