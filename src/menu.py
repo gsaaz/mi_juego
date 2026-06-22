@@ -4,11 +4,7 @@ import pygame
 from src.constantes import ANCHO, ALTO, FPS, BLANCO, ROJO
 from src.fondo import dibujar_fondo_cielo_completo, precargar_fondo_pantalla_completa
 from src.guardado import RUTA_PARTIDA, cargar_partida
-
-RUTA_FUENTE = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    "assets", "fonts", "04B_30__.TTF",
-)
+from src.fuentes import obtener_fuente_menu, TAMANO_MENU_TITULO, TAMANO_MENU_OPCION, TAMANO_MENU_ALERTA
 
 COLOR_OPCION = BLANCO
 COLOR_OPCION_ACTIVA = (255, 215, 0)
@@ -33,9 +29,9 @@ class MenuInicio:
 
         precargar_fondo_pantalla_completa()
 
-        self.fuente_titulo = pygame.font.Font(RUTA_FUENTE, 56)
-        self.fuente_opciones = pygame.font.Font(RUTA_FUENTE, 28)
-        self.fuente_alerta = pygame.font.Font(RUTA_FUENTE, 22)
+        self.fuente_titulo = obtener_fuente_menu(TAMANO_MENU_TITULO)
+        self.fuente_opciones = obtener_fuente_menu(TAMANO_MENU_OPCION)
+        self.fuente_alerta = obtener_fuente_menu(TAMANO_MENU_ALERTA)
 
     def _hay_partida_guardada(self):
         # Comprueba si existe un archivo de guardado en la raíz del proyecto.
@@ -120,8 +116,8 @@ class MenuInicio:
         # Renderiza el fondo, título, opciones y alertas del menú.
         dibujar_fondo_cielo_completo(self.ventana)
 
-        separacion_titulo_opciones = 60
-        separacion_opciones = 56
+        separacion_titulo_opciones = self.fuente_titulo.get_height() + 36
+        separacion_opciones = self.fuente_opciones.get_height() + 24
         altura_linea_opcion = self.fuente_opciones.get_height()
         altura_titulo = self.fuente_titulo.get_height()
         bloque_alto = (
