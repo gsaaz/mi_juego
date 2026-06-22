@@ -153,23 +153,23 @@ class Brainrot:
     def vivir(self, lista_monedas):
     # Suma edad y drena el hambre de la criatura en cada fotograma. 
     # Si el hambre llega a cero, castiga la salud simulando inanición.
-        self.hambre -= 0.02
+        self.hambre -= 0.015
         # Restamos hambre en cada frame
         self.edad += 0.01
         # Incrementamos el contador de edad
         
         if self.hambre <= 0: 
             self.hambre = 0      # Evita que el hambre tenga valores negativos
-            self.salud -= 0.2    # Drena la vida por falta de nutrientes 
+            self.salud -= 0.05    # Drena la vida por falta de nutrientes 
             
         if self.salud <= 0:
             self.salud = 0       # Evita que el hambre tenga valores
             self.vivo = False
         
         if self.salud >= 95 and self.hambre >= 50:
-            self.reloj_moneda += 1
+            self.reloj_moneda += 0.01
             
-            if self.reloj_moneda >= 300:
+            if self.reloj_moneda >= 1200:
                 self.spawnear_monedas(lista_monedas)
                 
                 self.reloj_moneda = 0

@@ -4,7 +4,31 @@ from src.constantes import (ANCHO, ALTO, LINEA_HORIZONTE, FPS,
                             NEGRO, ROJO, CELESTE, VERDE_PASTO)
 from src.brainrot import BrainrotA, BrainrotB, BrainrotC
 from src.comida import Comida
-from src.interfaz import dibujar_hud_brainrot, Tienda
+from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, Tienda
+from src.guardado import guardar_partida, cargar_partida
+
+COSTO_BRAINROT = 50
+
+def _es_game_over(dinero, lista_brainrots):
+    # Derrota: no hay criaturas vivas y no alcanza el dinero para comprar una nueva.
+    hay_vivos = any(brainrot.vivo for brainrot in lista_brainrots)
+    return not hay_vivos and dinero < COSTO_BRAINROT
+
+def _iniciar_partida_nueva(tienda):
+    # Restablece el estado inicial de una partida desde cero.
+    tienda.cant_A = 5
+    tienda.cant_B = 5
+    tienda.cant_C = 5
+    tienda.pestana_activa = "Comida"
+    tienda.comida_seleccionada = "A"
+    return {
+        "dinero": 20,
+        "lista_brainrots": [
+            BrainrotA(400, 350)
+        ],
+        "lista_comidas": [],
+        "lista_monedas": [],
+    }
 
 def ejecutar_juego():
     pygame.init() # Despierta submodulos internos de Pygame
@@ -14,19 +38,30 @@ def ejecutar_juego():
 
     fuente_chica = pygame.font.SysFont("Arial", 22)
 
+    # Carga automática de partida guardada (si existe partida.json).
+    datos_cargados = cargar_partida()
+
     # Entidades y Estado
-    lista_brainrots = [] # Creamos a nuestro primer brainrot
+    lista_brainrots = []
     lista_comidas = [] # Creamos la lista dinámica que guardará las galletas vivas
     lista_monedas = []
-    dinero = 100
     frames_alerta_dinero = 0
     frames_alerta_stock = 0
 
     tienda = Tienda()
 
-    lista_brainrots.append(BrainrotA(400,350))
-    lista_brainrots.append(BrainrotB(400,350))
-    lista_brainrots.append(BrainrotC(400,350))
+    if datos_cargados:
+        dinero = datos_cargados["dinero"]
+        tienda.cant_A = datos_cargados["cant_A"]
+        tienda.cant_B = datos_cargados["cant_B"]
+        tienda.cant_C = datos_cargados["cant_C"]
+        lista_brainrots = datos_cargados["lista_brainrots"]
+    else:
+        estado_inicial = _iniciar_partida_nueva(tienda)
+        dinero = estado_inicial["dinero"]
+        lista_brainrots = estado_inicial["lista_brainrots"]
+
+    game_over = _es_game_over(dinero, lista_brainrots)
 
     corriendo = True  # Variable de control (Flag) que mantiene el juego encendido
     while corriendo:
@@ -36,10 +71,23 @@ def ejecutar_juego():
         
         for evento in pygame.event.get():
              if evento.type == pygame.QUIT:
+                  guardar_partida(dinero, tienda, lista_brainrots)
                   corriendo = False
                   continue
              
              if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                if game_over:
+                    estado_inicial = _iniciar_partida_nueva(tienda)
+                    dinero = estado_inicial["dinero"]
+                    lista_brainrots = estado_inicial["lista_brainrots"]
+                    lista_comidas = estado_inicial["lista_comidas"]
+                    lista_monedas = estado_inicial["lista_monedas"]
+                    frames_alerta_dinero = 0
+                    frames_alerta_stock = 0
+                    game_over = False
+                    guardar_partida(dinero, tienda, lista_brainrots)
+                    continue
+
                 pos_mouse = evento.pos
 
                 # CAPA 1: INTERFAZ DE USUARIO
@@ -63,8 +111,8 @@ def ejecutar_juego():
                 elif tienda.btn_compra_A.collidepoint(pos_mouse):
                     click_en_tienda = True
                     if tienda.pestana_activa == "Brainrots":
-                        if dinero >= 50:
-                            dinero -= 50
+                        if dinero >= COSTO_BRAINROT:
+                            dinero -= COSTO_BRAINROT
                             x = random.randint(0, ANCHO - 50)
                             y = random.randint(LINEA_HORIZONTE, ALTO - 50)
                             lista_brainrots.append(BrainrotA(x, y))
@@ -79,8 +127,8 @@ def ejecutar_juego():
                 elif tienda.btn_compra_B.collidepoint(pos_mouse):
                     click_en_tienda = True
                     if tienda.pestana_activa == "Brainrots":
-                        if dinero >= 50:
-                            dinero -= 50
+                        if dinero >= COSTO_BRAINROT:
+                            dinero -= COSTO_BRAINROT
                             x = random.randint(0, ANCHO - 50)
                             y = random.randint(LINEA_HORIZONTE, ALTO - 50)
                             lista_brainrots.append(BrainrotB(x, y))
@@ -95,8 +143,8 @@ def ejecutar_juego():
                 elif tienda.btn_compra_C.collidepoint(pos_mouse):
                     click_en_tienda = True
                     if tienda.pestana_activa == "Brainrots":
-                        if dinero >= 50:
-                            dinero -= 50
+                        if dinero >= COSTO_BRAINROT:
+                            dinero -= COSTO_BRAINROT
                             x = random.randint(0, ANCHO - 50)
                             y = random.randint(LINEA_HORIZONTE, ALTO - 50)
                             lista_brainrots.append(BrainrotC(x, y))
@@ -117,7 +165,7 @@ def ejecutar_juego():
                 for moneda in lista_monedas:
                     hitbox_moneda = pygame.Rect(moneda.x, moneda.y, moneda.ancho, moneda.largo)
                     if hitbox_moneda.collidepoint(pos_mouse):
-                        dinero += 20
+                        dinero += 35
                         lista_monedas.remove(moneda)
                         moneda_recogida = True
                         break
@@ -142,14 +190,18 @@ def ejecutar_juego():
                     frames_alerta_stock = 120
 
         # (b) ACTUALIZAR
-        for brainrot in lista_brainrots:
-            if brainrot.vivo:
-                brainrot.buscar_comida_cercana(lista_comidas)
-                brainrot.mover(lista_comidas) # Pasamos la lista corregida aquí
-                brainrot.vivir(lista_monedas)
+        if not game_over:
+            for brainrot in lista_brainrots:
+                if brainrot.vivo:
+                    brainrot.buscar_comida_cercana(lista_comidas)
+                    brainrot.mover(lista_comidas) # Pasamos la lista corregida aquí
+                    brainrot.vivir(lista_monedas)
             
-        for comida in lista_comidas:
-            comida.caer()
+            for comida in lista_comidas:
+                comida.caer()
+
+            if _es_game_over(dinero, lista_brainrots):
+                game_over = True
     
         # (c) DIBUJAR
         # Pintamos toda la ventana de celeste para borrar los dibujos del frame anterior
@@ -188,6 +240,9 @@ def ejecutar_juego():
                 comida.dibujar(ventana)
 
         tienda.dibujar(ventana, fuente_chica)
+
+        if game_over:
+            dibujar_game_over(ventana)
                 
         pygame.display.flip()
         # Envía el lienzo finalizado a la tarjeta de video para que lo muestre en el monitor
