@@ -140,6 +140,7 @@ def ejecutar_juego():
     datos_cargados = menu.obtener_datos_cargados()
 
     Moneda.precargar()
+    Comida.precargar()
 
     tile_pasto_base = _cargar_textura_pasto("grass_1")
     tile_pasto_flores = _cargar_textura_pasto("grass_2")
