@@ -1,4 +1,4 @@
 /.vscode
 /src/__pycache__
 /.claude
-/datos/partida.json
+datos/partida.json
