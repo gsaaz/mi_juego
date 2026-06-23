@@ -20,3 +20,10 @@ MARRON = (139, 69, 19)
 KHAKI = (180,149,95)
 AZUL_NIEBLA = (122,142,214)
 ROSADO = (240,191,234)
+
+# Brainrots: tipo interno (A/B/C), nombre visible y color RGB.
+TIPOS_BRAINROT = {
+    "A": {"nombre": "67", "color": (81, 126, 207)},
+    "B": {"nombre": "tt", "color": (92, 107, 135)},
+    "C": {"nombre": "bc", "color": (38, 133, 36)},
+}

@@ -1,6 +1,6 @@
 import pygame
 import random
-from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO, AZUL_NIEBLA, KHAKI, ROSADO
+from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO, TIPOS_BRAINROT
 from src.moneda import Moneda, ANCHO_MONEDA
 
 class Brainrot:
@@ -12,7 +12,9 @@ class Brainrot:
         self.ancho = 50
         self.alto = 50
         self.color = BLANCO
-        
+        self.nombre = ""
+        self.tipo_dieta = ""
+
         # Posicion espacial
         self.x = x
         self.y = y
@@ -198,10 +200,12 @@ class Brainrot:
          # Convertimos self.x y self.y a enteros (int) porque las pantallas no pueden pintar "medios píxeles"
 
 class BrainrotA(Brainrot):
-    # Clase hija A
+    # Brainrot 67 — come comida tipo A.
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.color = AZUL_NIEBLA
+        datos = TIPOS_BRAINROT["A"]
+        self.color = datos["color"]
+        self.nombre = datos["nombre"]
         self.tipo_dieta = "A"
     
     def buscar_comida_cercana(self, lista_comidas):
@@ -210,10 +214,12 @@ class BrainrotA(Brainrot):
         super().buscar_comida_cercana(comidas_que_me_gustan)
 
 class BrainrotB(Brainrot):
-    # Clase hija B
+    # Brainrot tt — come comida tipo B.
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.color = KHAKI
+        datos = TIPOS_BRAINROT["B"]
+        self.color = datos["color"]
+        self.nombre = datos["nombre"]
         self.tipo_dieta = "B"
     
     def buscar_comida_cercana(self, lista_comidas):
@@ -223,10 +229,12 @@ class BrainrotB(Brainrot):
 
 
 class BrainrotC(Brainrot):
-    # Clase hija C
+    # Brainrot bc — come comida tipo C.
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.color = ROSADO
+        datos = TIPOS_BRAINROT["C"]
+        self.color = datos["color"]
+        self.nombre = datos["nombre"]
         self.tipo_dieta = "C"
     
     def buscar_comida_cercana(self, lista_comidas):
