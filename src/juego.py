@@ -3,7 +3,7 @@ import pygame
 import random
 from src.constantes import (ANCHO, ALTO, LINEA_HORIZONTE, FPS, 
                             NEGRO, BLANCO, ROJO)
-from src.brainrot import BrainrotA, BrainrotB, BrainrotC
+from src.brainrot import BrainrotA, BrainrotB, BrainrotC, Brainrot, TAMANO_MAX_BRAINROT
 from src.comida import Comida
 from src.moneda import Moneda
 from src.fondo import precargar_fondo, dibujar_fondo_cielo
@@ -141,6 +141,7 @@ def ejecutar_juego():
 
     Moneda.precargar()
     Comida.precargar()
+    Brainrot.precargar()
 
     tile_pasto_base = _cargar_textura_pasto("grass_1")
     tile_pasto_flores = _cargar_textura_pasto("grass_2")
@@ -225,8 +226,8 @@ def ejecutar_juego():
                     if tienda.pestana_activa == "Brainrots":
                         if dinero >= COSTO_BRAINROT:
                             dinero -= COSTO_BRAINROT
-                            x = random.randint(0, ANCHO - 50)
-                            y = random.randint(LINEA_HORIZONTE, ALTO - 50)
+                            x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
+                            y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
                             lista_brainrots.append(BrainrotA(x, y))
                         else:
                             frames_alerta_dinero = 120
@@ -241,8 +242,8 @@ def ejecutar_juego():
                     if tienda.pestana_activa == "Brainrots":
                         if dinero >= COSTO_BRAINROT:
                             dinero -= COSTO_BRAINROT
-                            x = random.randint(0, ANCHO - 50)
-                            y = random.randint(LINEA_HORIZONTE, ALTO - 50)
+                            x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
+                            y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
                             lista_brainrots.append(BrainrotB(x, y))
                         else:
                             frames_alerta_dinero = 120
@@ -257,8 +258,8 @@ def ejecutar_juego():
                     if tienda.pestana_activa == "Brainrots":
                         if dinero >= COSTO_BRAINROT:
                             dinero -= COSTO_BRAINROT
-                            x = random.randint(0, ANCHO - 50)
-                            y = random.randint(LINEA_HORIZONTE, ALTO - 50)
+                            x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
+                            y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
                             lista_brainrots.append(BrainrotC(x, y))
                         else:
                             frames_alerta_dinero = 120
