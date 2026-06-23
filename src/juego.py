@@ -10,6 +10,7 @@ from src.fondo import precargar_fondo, dibujar_fondo_cielo
 from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, dibujar_indicador_monedas, Tienda
 from src.guardado import guardar_partida, cargar_partida
 from src.menu import MenuInicio
+from src.audio import iniciar_musica_fondo, detener_musica_fondo, precargar_sfx, reproducir_recolectar_moneda
 from src.fuentes import obtener_fuente, TAMANO_NORMAL
 
 COSTO_BRAINROT = 50
@@ -133,6 +134,9 @@ def ejecutar_juego():
     pygame.init() # Despierta submodulos internos de Pygame
     ventana = pygame.display.set_mode((ANCHO, ALTO)) 
     pygame.display.set_caption("Villa Brainrot - Proyecto Final") 
+
+    iniciar_musica_fondo()
+    precargar_sfx()
 
     precargar_fondo()
     menu = MenuInicio(ventana)
@@ -280,6 +284,7 @@ def ejecutar_juego():
                     if hitbox_moneda.collidepoint(pos_mouse):
                         dinero += moneda.valor
                         lista_monedas.remove(moneda)
+                        reproducir_recolectar_moneda()
                         moneda_recogida = True
                         break
                 
@@ -367,3 +372,4 @@ def ejecutar_juego():
         # Envía el lienzo finalizado a la tarjeta de video para que lo muestre en el monitor
 
 pygame.quit() # Apaga los submódulos de Pygame de forma ordenada para evitar que la ventana se congele
+detener_musica_fondo()
