@@ -1,7 +1,13 @@
+import random
 import pygame
 from src.constantes import (BLANCO, NEGRO, AMARILLO_ORO, MARRON, ROJO,
-                            ANCHO, ALTO, TIPOS_BRAINROT)
+                            ANCHO, ALTO, LINEA_HORIZONTE, TIPOS_BRAINROT)
+from src.brainrot import BrainrotA, BrainrotB, BrainrotC, TAMANO_MAX_BRAINROT
 from src.fuentes import obtener_fuente, obtener_fuente_para_rect, TAMANO_MINIMO, TAMANO_PEQUENO, TAMANO_NORMAL, TAMANO_TITULO
+
+# Costos de compra centralizados aquí porque la Tienda es dueña de los precios.
+COSTO_BRAINROT = 50
+COSTO_COMIDA   = 10
 
 def dibujar_indicador_monedas(superficie, fuente, dinero, rect):
     # Muestra el saldo alineado con la tienda, centrado en su propio recuadro.
@@ -267,3 +273,74 @@ class Tienda:
             _dibujar_dos_lineas_en_rect(
                 superficie, TIPOS_BRAINROT[tipo]["nombre"], f"x{cantidad}", rect,
             )
+
+    def procesar_click(self, pos_mouse, dinero):
+        # Procesa un click del mouse sobre la tienda.
+        # Retorna dict con: click_consumido, dinero, frames_alerta_dinero, nuevo_brainrot.
+        resultado = {
+            "click_consumido":    False,
+            "dinero":             dinero,
+            "frames_alerta_dinero": 0,
+            "nuevo_brainrot":     None,
+        }
+
+        # Pestañas de navegación
+        if self.btn_pestana_comida.collidepoint(pos_mouse):
+            self.pestana_activa = "Comida"
+            resultado["click_consumido"] = True
+            return resultado
+
+        if self.btn_pestana_brainrots.collidepoint(pos_mouse):
+            self.pestana_activa = "Brainrots"
+            resultado["click_consumido"] = True
+            return resultado
+
+        # Selectores de tipo de comida activa
+        if self.btn_sel_A.collidepoint(pos_mouse):
+            self.comida_seleccionada = "A"
+            resultado["click_consumido"] = True
+            return resultado
+
+        if self.btn_sel_B.collidepoint(pos_mouse):
+            self.comida_seleccionada = "B"
+            resultado["click_consumido"] = True
+            return resultado
+
+        if self.btn_sel_C.collidepoint(pos_mouse):
+            self.comida_seleccionada = "C"
+            resultado["click_consumido"] = True
+            return resultado
+
+        # Botones de compra (A, B, C) — comportamiento distinto según pestaña activa
+        botones = {"A": self.btn_compra_A, "B": self.btn_compra_B, "C": self.btn_compra_C}
+        clases  = {"A": BrainrotA, "B": BrainrotB, "C": BrainrotC}
+
+        for tipo, rect in botones.items():
+            if not rect.collidepoint(pos_mouse):
+                continue
+
+            resultado["click_consumido"] = True
+
+            if self.pestana_activa == "Brainrots":
+                if dinero >= COSTO_BRAINROT:
+                    resultado["dinero"] = dinero - COSTO_BRAINROT
+                    x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
+                    y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
+                    resultado["nuevo_brainrot"] = clases[tipo](x, y)
+                else:
+                    resultado["frames_alerta_dinero"] = 120
+            else:  # pestaña Comida
+                if dinero >= COSTO_COMIDA:
+                    resultado["dinero"] = dinero - COSTO_COMIDA
+                    if tipo == "A":
+                        self.cant_A += 1
+                    elif tipo == "B":
+                        self.cant_B += 1
+                    else:
+                        self.cant_C += 1
+                else:
+                    resultado["frames_alerta_dinero"] = 120
+
+            return resultado
+
+        return resultado
