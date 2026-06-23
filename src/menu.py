@@ -19,8 +19,9 @@ OPCIONES = (
 )
 
 class MenuInicio:
-    # Menú interactivo previo al bucle principal del juego.
-
+    """
+    Controlador interactivo del Menú de Inicio.
+    """
     def __init__(self, ventana):
         self.ventana = ventana
         self.opcion_seleccionada = 0
@@ -35,18 +36,18 @@ class MenuInicio:
         self.fuente_alerta = obtener_fuente_menu(TAMANO_MENU_ALERTA)
 
     def _hay_partida_guardada(self):
-        # Comprueba si existe un archivo de guardado en la raíz del proyecto.
+        """Verifica la existencia del archivo JSON de guardado."""
         return os.path.exists(RUTA_PARTIDA)
 
     def _mover_seleccion(self, paso):
-        # Cambia la opción resaltada, omitiendo "Cargar" si no hay partida guardada.
+        """Permite navegar por las opciones con las teclas de dirección."""
         while True:
             self.opcion_seleccionada = (self.opcion_seleccionada + paso) % len(OPCIONES)
             if self.opcion_seleccionada != 1 or self._hay_partida_guardada():
                 break
 
     def _activar_opcion(self):
-        # Ejecuta la acción de la opción seleccionada.
+        """Ejecuta la función seleccionada por el usuario."""
         if self.opcion_seleccionada == 0:
             if os.path.exists(RUTA_PARTIDA):
                 os.remove(RUTA_PARTIDA)
@@ -65,7 +66,7 @@ class MenuInicio:
         return True
 
     def _procesar_eventos(self):
-        # Gestiona teclado y cierre de ventana durante el menú.
+        """Escucha eventos del teclado en la pantalla de inicio."""
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 self.accion = "salir"
@@ -114,7 +115,7 @@ class MenuInicio:
         return imagen_texto.get_height()
 
     def _dibujar(self):
-        # Renderiza el fondo, título, opciones y alertas del menú.
+        """Renderiza la gráfica general del Menú (cielo, logo, textos)."""
         dibujar_fondo_cielo_completo(self.ventana)
 
         separacion_titulo_opciones = self.fuente_titulo.get_height() + 36
@@ -150,7 +151,7 @@ class MenuInicio:
             self.frames_alerta -= 1
 
     def ejecutar(self):
-        # Bucle del menú hasta que el jugador elige una acción válida o sale.
+        """Bucle continuo del menú hasta seleccionar acción."""
         reloj = pygame.time.Clock()
         corriendo = True
 
@@ -169,7 +170,7 @@ class MenuInicio:
         return self.accion
 
     def obtener_datos_cargados(self):
-        # Devuelve los datos de partida.json si la acción fue cargar.
+        """Carga y devuelve los datos del JSON si seleccionó Cargar."""
         if self.accion == "cargar":
             return cargar_partida()
         return None

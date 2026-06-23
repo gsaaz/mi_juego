@@ -4,7 +4,6 @@ import pygame
 from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE
 
 # ─── CIELO ────────────────────────────────────────────────────────────────────
-
 RUTAS_CIELO = [
     os.path.join(os.path.dirname(__file__), "assets"),
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
@@ -14,7 +13,7 @@ _fondo_cielo = None
 _fondo_cielo_pantalla = None
 
 def _resolver_ruta_cielo():
-    # Busca sky1 en src/assets o assets/sprites (.png o .jpg).
+    """Ubica la textura del cielo."""
     for carpeta in RUTAS_CIELO:
         for extension in (".png", ".jpg", ".jpeg"):
             ruta = os.path.join(carpeta, f"sky1{extension}")
@@ -25,7 +24,7 @@ def _resolver_ruta_cielo():
     )
 
 def precargar_fondo():
-    # Escala sky1 para cubrir la franja del cielo (800×250) sin deformar la imagen.
+    """Escala la imagen del cielo para cubrir la franja (Ancho x Horizonte)."""
     global _fondo_cielo
     if _fondo_cielo is not None:
         return _fondo_cielo
@@ -50,11 +49,11 @@ def precargar_fondo():
     return _fondo_cielo
 
 def dibujar_fondo_cielo(superficie):
-    # Pinta la textura del cielo en la zona superior de la pantalla.
+    """Pinta la textura del cielo en la zona superior de la pantalla."""
     superficie.blit(precargar_fondo(), (0, 0))
 
 def _escalar_cielo_cover(ancho_destino, alto_destino):
-    # Escala sky1 en modo "cover" para cubrir un rectángulo sin deformar la imagen.
+    """Escala el cielo en modo 'cover' sin perder proporción."""
     imagen = pygame.image.load(_resolver_ruta_cielo()).convert()
     ancho_origen, alto_origen = imagen.get_size()
     escala = max(ancho_destino / ancho_origen, alto_destino / alto_origen)
@@ -68,7 +67,7 @@ def _escalar_cielo_cover(ancho_destino, alto_destino):
     ).copy()
 
 def precargar_fondo_pantalla_completa():
-    # Escala sky1 para cubrir toda la ventana (800×600), usado en el menú de inicio.
+    """Genera fondo para cubrir toda la ventana, usado en el menú."""
     global _fondo_cielo_pantalla
     if _fondo_cielo_pantalla is not None:
         return _fondo_cielo_pantalla
@@ -77,7 +76,7 @@ def precargar_fondo_pantalla_completa():
     return _fondo_cielo_pantalla
 
 def dibujar_fondo_cielo_completo(superficie):
-    # Pinta el cielo escalado a pantalla completa.
+    """Pinta el cielo a pantalla completa."""
     superficie.blit(precargar_fondo_pantalla_completa(), (0, 0))
 
 # ─── PRADO Y VALLA ────────────────────────────────────────────────────────────
@@ -94,7 +93,7 @@ RUTAS_ASSETS = [
 NOMBRES_VALLA = ("valla.png", "valla.jpg", "fence.png", "fence.jpg")
 
 def _resolver_ruta_valla():
-    # Busca el sprite de la valla en src/assets o assets/sprites.
+    """Busca el sprite de la valla (fence)."""
     for carpeta in RUTAS_ASSETS:
         for nombre in NOMBRES_VALLA:
             ruta = os.path.join(carpeta, nombre)
@@ -105,12 +104,12 @@ def _resolver_ruta_valla():
     )
 
 def _cargar_valla():
-    # Carga y escala el segmento de valla para repetirlo a lo largo del horizonte.
+    """Carga y escala el segmento de valla."""
     imagen = pygame.image.load(_resolver_ruta_valla()).convert_alpha()
     return pygame.transform.scale(imagen, (ANCHO_VALLA, ALTO_VALLA))
 
 def _construir_segmentos_valla(sprite_valla):
-    # Precalcula los segmentos de valla para cubrir todo el ancho sin huecos.
+    """Calcula una vez cómo se distribuirá la valla a lo largo del horizonte."""
     segmentos = []
     x = 0
     while x < ANCHO:
@@ -126,7 +125,7 @@ def _construir_segmentos_valla(sprite_valla):
     return segmentos
 
 def _dibujar_valla(superficie, segmentos_valla):
-    # Pinta la cerca sobre el horizonte, tapando la unión entre cielo y pasto.
+    """Dibuja la valla precalculada tapando la línea del horizonte."""
     pos_y = LINEA_HORIZONTE - OFFSET_VALLA_Y
     for x, imagen in segmentos_valla:
         superficie.blit(imagen, (x, pos_y))
@@ -154,7 +153,10 @@ def _celda_textura(textura, ancho, alto):
     return textura.subsurface((0, 0, ancho, alto)).copy()
 
 def _generar_mapa_prado(tile_pasto_base, tile_pasto_flores, tile_pasto_alto):
-    # Construye una sola vez la matriz estática del prado (85% base, 10% flores, 5% alto).
+    """
+    Construye la matriz visual (tilemap) del prado de forma aleatoria estática.
+    85% pasto normal, 10% flores, 5% pasto alto.
+    """
     mapa_prado = []
     for y in range(LINEA_HORIZONTE, ALTO, TAMANO_BLOQUE):
         for x in range(0, ANCHO, TAMANO_BLOQUE):
@@ -187,14 +189,20 @@ def _preparar_prado():
     return _generar_mapa_prado(tile_base, tile_flores, tile_alto)
 
 def inicializar_entorno():
-    # Carga todas las texturas del escenario y retorna (mapa_prado, segmentos_valla).
-    # Debe llamarse una sola vez, después de pygame.init(), antes del bucle principal.
+    """
+    Carga todos los elementos de fondo, generando el mapa que se usará
+    en el bucle de juego continuo.
+    
+    :return: Tupla (mapa_prado, segmentos_valla)
+    """
     mapa_prado      = _preparar_prado()
     segmentos_valla = _preparar_valla()
     return mapa_prado, segmentos_valla
 
 def dibujar_todo_el_entorno(superficie, mapa_prado, segmentos_valla):
-    # Dibuja en orden: cielo → prado → valla sobre el horizonte.
+    """
+    Pinta las tres capas del entorno en orden (Cielo, Prado, Valla).
+    """
     dibujar_fondo_cielo(superficie)
     for x, y, imagen_pasto in mapa_prado:
         superficie.blit(imagen_pasto, (x, y))

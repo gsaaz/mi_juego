@@ -4,12 +4,13 @@ import pygame
 ANCHO = 800
 ALTO = 600
 
-# Separa cielo del pasto
+# Coordenada Y que separa el cielo del pasto
 LINEA_HORIZONTE = 250
 
+# Fotogramas por segundo (Frames Per Second) objetivo del juego
 FPS = 60
 
-# Paleta de colores en formato tupla RGB
+# Paleta de colores en formato tupla RGB (Rojo, Verde, Azul)
 NEGRO  = (0, 0, 0) 
 BLANCO = (255, 255, 255) 
 AMARILLO_ORO = (255, 215, 0) 
@@ -21,7 +22,8 @@ KHAKI = (180,149,95)
 AZUL_NIEBLA = (122,142,214)
 ROSADO = (240,191,234)
 
-# Brainrots: tipo interno (A/B/C), nombre visible, color y sprite.
+# Configuración de los Brainrots:
+# tipo interno (A/B/C), nombre visible, color, sprite y escala visual opcional
 TIPOS_BRAINROT = {
     "A": {"nombre": "67", "color": (81, 126, 207), "sprite": "67_sprite.png"},
     "B": {"nombre": "tt", "color": (92, 107, 135), "sprite": "tt_sprite.png"},

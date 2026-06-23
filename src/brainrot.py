@@ -22,8 +22,11 @@ TAMANO_MAX_BRAINROT = max(
 )
 
 class Brainrot:
-    # Representa las entidades de la villa (brainrots).
-
+    """
+    Clase base para las criaturas "Brainrot".
+    Maneja el ciclo de vida (hambre, edad, salud), IA de movimiento (paseo/buscar)
+    y generación de monedas en estado feliz.
+    """
     def __init__(self, x, y):
         self.ancho = ANCHO_BRAINROT
         self.alto = ALTO_BRAINROT
@@ -53,6 +56,7 @@ class Brainrot:
 
     @classmethod
     def _resolver_ruta_sprite(cls, nombre_archivo):
+        """Busca el archivo de imagen de la criatura."""
         for carpeta in RUTAS_SPRITES:
             ruta = os.path.join(carpeta, nombre_archivo)
             if os.path.exists(ruta):
@@ -63,7 +67,7 @@ class Brainrot:
 
     @classmethod
     def _escalar_sprite_a_caja(cls, imagen, factor=1.0):
-        # Escala el sprite para que quepa en una caja fija y quede centrado.
+        """Escala el sprite encajándolo en las dimensiones base de Brainrot."""
         ancho_caja, alto_caja = _tamano_caja(factor)
         ancho_origen, alto_origen = imagen.get_size()
         escala = min(ancho_caja / ancho_origen, alto_caja / alto_origen)
@@ -79,6 +83,7 @@ class Brainrot:
 
     @classmethod
     def _obtener_par_sprites(cls, nombre_archivo, factor=1.0):
+        """Genera el sprite mirando a derecha e izquierda, lo almacena en caché."""
         clave = (nombre_archivo, factor)
         if clave not in _cache_sprites:
             ruta = cls._resolver_ruta_sprite(nombre_archivo)
@@ -90,12 +95,12 @@ class Brainrot:
 
     @classmethod
     def precargar(cls):
-        # Precarga todos los sprites de brainrot tras crear la ventana.
+        """Precarga todos los sprites en memoria antes de empezar a jugar."""
         for datos in TIPOS_BRAINROT.values():
             cls._obtener_par_sprites(datos["sprite"], datos.get("escala", 1.0))
 
     def _cargar_sprites(self, tipo):
-        # Asigna las variantes derecha/izquierda según el tipo de criatura.
+        """Asigna los sprites al objeto instanciado."""
         datos = TIPOS_BRAINROT[tipo]
         factor = datos.get("escala", 1.0)
         self.image_derecha, self.image_izquierda = Brainrot._obtener_par_sprites(
@@ -105,13 +110,17 @@ class Brainrot:
         self.ancho, self.alto = _tamano_caja(factor)
 
     def actualizar(self):
-        # Orienta el sprite según la velocidad horizontal actual.
+        """Voltea el sprite según la dirección de movimiento horizontal."""
         if self.vx > 0:
             self.image = self.image_derecha
         elif self.vx < 0:
             self.image = self.image_izquierda
 
     def buscar_comida_cercana(self, lista_comidas):
+        """
+        Escanea la lista de comida activa buscando la que está más cerca.
+        Solo considera la comida que ya aterrizó.
+        """
         comidas_listas = [c for c in lista_comidas if c.y >= c.y_destino]
 
         if not comidas_listas:
@@ -136,6 +145,10 @@ class Brainrot:
             self.estado = "buscando_comida"
 
     def mover(self, lista_comidas):
+        """
+        Aplica físicas de movimiento y rebote con las paredes.
+        Si está buscando comida, redirige la trayectoria a la galleta.
+        """
         if self.estado == "paseando":
             self.vx += random.uniform(-0.5, 0.5)
             self.vy += random.uniform(-1, 1)
@@ -172,6 +185,7 @@ class Brainrot:
         self.x += self.vx
         self.y += self.vy
 
+        # Rebote en pantalla
         if self.x <= 0:
             self.x = 0
             self.vx *= -1
@@ -186,6 +200,7 @@ class Brainrot:
             self.y = ALTO - self.alto
             self.vy *= -1
 
+        # Colisión y comer
         if self.estado == "buscando_comida" and self.comida_objetivo:
             rect_brain = pygame.Rect(self.x, self.y, self.ancho, self.alto)
             rect_comida = pygame.Rect(
@@ -203,6 +218,10 @@ class Brainrot:
         self.actualizar()
 
     def vivir(self, lista_monedas):
+        """
+        Aumenta el hambre y desgasta la salud si no come.
+        Spawnea monedas (dinero) si está sano.
+        """
         self.hambre -= 0.015
         self.edad += 0.01
 
@@ -223,6 +242,7 @@ class Brainrot:
             self.reloj_moneda = 0
 
     def spawnear_monedas(self, lista_monedas):
+        """Genera una moneda (oro/plata/bronce) a los pies de la criatura."""
         rand = random.random()
         if rand < 0.70:
             tipo = "bronce"
@@ -237,6 +257,7 @@ class Brainrot:
         ))
 
     def dibujar(self, superficie):
+        """Dibuja el sprite actual de la criatura en pantalla."""
         if self.image is not None:
             superficie.blit(self.image, (int(self.x), int(self.y)))
         else:
@@ -244,7 +265,7 @@ class Brainrot:
                 superficie, self.color, (int(self.x), int(self.y), self.ancho, self.alto),
             )
 
-
+# Clases hijas específicas que determinan qué dieta les gusta a la criatura
 class BrainrotA(Brainrot):
     def __init__(self, x, y):
         super().__init__(x, y)

@@ -8,11 +8,12 @@ COSTO_BRAINROT = 50
 COSTO_COMIDA   = 10
 
 def dibujar_indicador_monedas(superficie, fuente, dinero, rect):
-    # Muestra el saldo alineado con la tienda, centrado en su propio recuadro.
+    """Muestra el saldo disponible del jugador."""
     texto_dinero = f"Dinero: $ {dinero}"
     _dibujar_texto_en_rect(superficie, texto_dinero, rect, NEGRO, tamano_inicial=TAMANO_NORMAL, padding=2)
 
 def dibujar_hud_brainrot(superficie, fuente, brainrot):
+    """Dibuja encima de la criatura sus niveles de hambre y salud."""
     texto_hambre = f"{brainrot.nombre} H:{int(brainrot.hambre)}% S:{int(brainrot.salud)}%"
     imagen_texto = fuente.render(texto_hambre, True, BLANCO)
     centro_x = int(brainrot.x) + brainrot.ancho // 2
@@ -21,7 +22,7 @@ def dibujar_hud_brainrot(superficie, fuente, brainrot):
     superficie.blit(imagen_texto, (x, y))
 
 def dibujar_game_over(superficie):
-    # Superpone la pantalla de derrota cuando no quedan criaturas ni fondos para continuar.
+    """Dibuja una capa oscura y el mensaje final cuando el jugador pierde."""
     capa = pygame.Surface((ANCHO, ALTO))
     capa.set_alpha(180)
     capa.fill(NEGRO)
@@ -128,6 +129,10 @@ def _desplazar_rects(rects, dx, dy):
         rect.y += dy
 
 class Tienda:
+    """
+    Controla el funcionamiento visual y de lógica del panel de transacciones
+    superior, permitiendo al usuario comprar comida y criaturas.
+    """
     def __init__(self):
         # --- ESTADOS DE LA INTERFAZ ---
         self.pestana_activa = "Comida"  # "Comida" o "Brainrots" (Para la barra de arriba)
@@ -217,8 +222,7 @@ class Tienda:
         self.panel_lateral = _rect_envolvente(rects_inventario, padding=2)
 
     def dibujar(self, superficie, fuente):
-        # Renderiza la barra superior de la tienda y el selector lateral de comida.
-        # --- BARRA SUPERIOR DE LA TIENDA ---
+        """Renderiza los recuadros gráficos, botones y pestañas de la tienda en pantalla."""
         pygame.draw.rect(superficie, MARRON, self.panel_superior)
 
         color_tab_comida = AMARILLO_ORO if self.pestana_activa == "Comida" else (100, 80, 60)
@@ -273,15 +277,10 @@ class Tienda:
             )
 
     def procesar_click(self, pos_mouse, dinero):
-        # Evalúa si el click cayó sobre algún control de la tienda.
-        # Retorna None si el click no fue en la tienda (para que el juego continúe
-        # procesando las capas 2 y 3).
-        # Si fue en la tienda, retorna un dict con los cambios de estado:
-        #   dinero       → nuevo saldo después de la operación
-        #   alerta_dinero → frames a mostrar la alerta de fondos insuficientes (0 si no)
-        #   alerta_stock  → frames a mostrar la alerta de sin stock (0 si no)
-        #   spawn_brainrot → "A", "B" o "C" si hay que spawnear uno; None si no
-
+        """
+        Intercepta clics del mouse para interactuar con botones de compra o pestañas.
+        Devuelve un diccionario de estado si hubo clic, None de lo contrario.
+        """
         _sin_cambios = {"dinero": dinero, "alerta_dinero": 0, "alerta_stock": 0, "spawn_brainrot": None}
 
         # --- Pestañas de navegación ---

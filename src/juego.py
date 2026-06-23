@@ -17,12 +17,16 @@ _CLASES_BRAINROT = {"A": BrainrotA, "B": BrainrotB, "C": BrainrotC}
 
 
 def _es_game_over(dinero, lista_brainrots):
-    # Derrota: no hay criaturas vivas y no alcanza el dinero para comprar una nueva.
+    """
+    Verifica las condiciones de derrota:
+    El jugador pierde cuando no quedan criaturas vivas y tampoco hay dinero
+    suficiente para adquirir un nuevo Brainrot en la tienda.
+    """
     hay_vivos = any(brainrot.vivo for brainrot in lista_brainrots)
     return not hay_vivos and dinero < COSTO_BRAINROT
 
 def _iniciar_partida_nueva(tienda):
-    # Restablece el estado inicial de una partida desde cero.
+    """Restablece los parámetros iniciales para empezar una partida desde cero."""
     tienda.cant_A = 5
     tienda.cant_B = 5
     tienda.cant_C = 5
@@ -36,6 +40,10 @@ def _iniciar_partida_nueva(tienda):
     }
 
 def ejecutar_juego():
+    """
+    Función de arranque que inicializa los subsistemas de Pygame y 
+    aloja el bucle infinito (Game Loop).
+    """
     pygame.init() # Despierta submodulos internos de Pygame
     ventana = pygame.display.set_mode((ANCHO, ALTO))
     pygame.display.set_caption("Villa Brainrot - Proyecto Final")
