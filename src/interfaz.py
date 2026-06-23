@@ -1,6 +1,6 @@
 import pygame
 from src.constantes import (BLANCO, NEGRO, AMARILLO_ORO, MARRON, ROJO,
-                            AZUL_NIEBLA, KHAKI, ROSADO, ANCHO, ALTO)
+                            ANCHO, ALTO, TIPOS_BRAINROT)
 from src.fuentes import obtener_fuente, obtener_fuente_para_rect, TAMANO_MINIMO, TAMANO_PEQUENO, TAMANO_NORMAL, TAMANO_TITULO
 
 def dibujar_indicador_monedas(superficie, fuente, dinero, rect):
@@ -229,35 +229,41 @@ class Tienda:
         _dibujar_texto_en_rect(superficie, "Brainrot", self.btn_pestana_brainrots, tamano_inicial=TAMANO_MINIMO + 2)
 
         botones_compra = [
-            (self.btn_compra_A, "A", AZUL_NIEBLA),
-            (self.btn_compra_B, "B", KHAKI),
-            (self.btn_compra_C, "C", ROSADO),
+            (self.btn_compra_A, "A", TIPOS_BRAINROT["A"]["color"]),
+            (self.btn_compra_B, "B", TIPOS_BRAINROT["B"]["color"]),
+            (self.btn_compra_C, "C", TIPOS_BRAINROT["C"]["color"]),
         ]
         costo = 10 if self.pestana_activa == "Comida" else 50
-        prefijo = "Cda" if self.pestana_activa == "Comida" else "Br"
 
-        for rect, letra, color_tipo in botones_compra:
+        for rect, tipo, color_tipo in botones_compra:
+            nombre = TIPOS_BRAINROT[tipo]["nombre"]
             pygame.draw.rect(superficie, color_tipo, rect)
             pygame.draw.rect(superficie, NEGRO, rect, 2)
+            if self.pestana_activa == "Comida":
+                etiqueta = f"Cda {nombre}"
+            else:
+                etiqueta = nombre
             _dibujar_boton_compra(
-                superficie, rect, f"{prefijo} {letra}", f"${costo}",
+                superficie, rect, etiqueta, f"${costo}",
             )
 
         # --- INVENTARIO SUPERIOR (selector de comida, a la derecha de la tienda) ---
         pygame.draw.rect(superficie, MARRON, self.panel_lateral)
 
         selectores = [
-            (self.btn_sel_A, "A", self.cant_A, AZUL_NIEBLA),
-            (self.btn_sel_B, "B", self.cant_B, KHAKI),
-            (self.btn_sel_C, "C", self.cant_C, ROSADO),
+            (self.btn_sel_A, "A", self.cant_A, TIPOS_BRAINROT["A"]["color"]),
+            (self.btn_sel_B, "B", self.cant_B, TIPOS_BRAINROT["B"]["color"]),
+            (self.btn_sel_C, "C", self.cant_C, TIPOS_BRAINROT["C"]["color"]),
         ]
 
-        for rect, letra, cantidad, color_tipo in selectores:
-            seleccionado = self.comida_seleccionada == letra
+        for rect, tipo, cantidad, color_tipo in selectores:
+            seleccionado = self.comida_seleccionada == tipo
             color_fondo = AMARILLO_ORO if seleccionado else color_tipo
             grosor_borde = 4 if seleccionado else 2
 
             pygame.draw.rect(superficie, color_fondo, rect)
             pygame.draw.rect(superficie, ROJO if seleccionado else NEGRO, rect, grosor_borde)
 
-            _dibujar_dos_lineas_en_rect(superficie, letra, f"x{cantidad}", rect)
+            _dibujar_dos_lineas_en_rect(
+                superficie, TIPOS_BRAINROT[tipo]["nombre"], f"x{cantidad}", rect,
+            )
