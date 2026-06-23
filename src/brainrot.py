@@ -1,8 +1,15 @@
 import os
+import math
 import pygame
 import random
 from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO, TIPOS_BRAINROT
 from src.moneda import Moneda, ANCHO_MONEDA
+from src.animacion import (
+    cargar_sprite, blit_rotado, dibujar_sombra,
+    TILT, HOP, VEL_PASO, PITCH, BOB, HOVER, VEL_FLOT,
+    SALTO_ALTURA, SALTO_FRAMES,
+)
+
 
 RUTAS_SPRITES = [
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
@@ -13,17 +20,24 @@ ALTO_BRAINROT = 75
 ANCHO_BRAINROT = 75
 _cache_sprites = {}
 
+
 def _tamano_caja(factor=1.0):
     return max(1, int(ANCHO_BRAINROT * factor)), max(1, int(ALTO_BRAINROT * factor))
+
 
 TAMANO_MAX_BRAINROT = max(
     _tamano_caja(datos.get("escala", 1.0))[0] for datos in TIPOS_BRAINROT.values()
 )
 
+
 class Brainrot:
     # Representa las entidades de la villa (brainrots).
 
+    SPRITE = None
+    ESTILO = "walk"
+
     def __init__(self, x, y):
+        # Hitbox por defecto (se ajusta en _cargar_sprites)
         self.ancho = ANCHO_BRAINROT
         self.alto = ALTO_BRAINROT
         self.color = BLANCO
@@ -46,9 +60,16 @@ class Brainrot:
         self.reloj_moneda = 0
         self.vivo = True
 
+        # Sprites y estado de animacion
         self.image_derecha = None
         self.image_izquierda = None
         self.image = None
+
+        self.mirando = 1
+        self.moviendo = True
+        self.fase_anim = 0.0
+        self.saltando = False
+        self.salto_t = 0.0
 
     @classmethod
     def _resolver_ruta_sprite(cls, nombre_archivo):
@@ -56,13 +77,10 @@ class Brainrot:
             ruta = os.path.join(carpeta, nombre_archivo)
             if os.path.exists(ruta):
                 return ruta
-        raise FileNotFoundError(
-            f"No se encontró '{nombre_archivo}' en: {', '.join(RUTAS_SPRITES)}"
-        )
+        raise FileNotFoundError(f"No se encontró '{nombre_archivo}' en: {', '.join(RUTAS_SPRITES)}")
 
     @classmethod
     def _escalar_sprite_a_caja(cls, imagen, factor=1.0):
-        # Escala el sprite para que quepa en una caja fija y quede centrado.
         ancho_caja, alto_caja = _tamano_caja(factor)
         ancho_origen, alto_origen = imagen.get_size()
         escala = min(ancho_caja / ancho_origen, alto_caja / alto_origen)
@@ -89,22 +107,17 @@ class Brainrot:
 
     @classmethod
     def precargar(cls):
-        # Precarga todos los sprites de brainrot tras crear la ventana.
         for datos in TIPOS_BRAINROT.values():
             cls._obtener_par_sprites(datos["sprite"], datos.get("escala", 1.0))
 
     def _cargar_sprites(self, tipo):
-        # Asigna las variantes derecha/izquierda según el tipo de criatura.
         datos = TIPOS_BRAINROT[tipo]
         factor = datos.get("escala", 1.0)
-        self.image_derecha, self.image_izquierda = Brainrot._obtener_par_sprites(
-            datos["sprite"], factor,
-        )
+        self.image_derecha, self.image_izquierda = Brainrot._obtener_par_sprites(datos["sprite"], factor)
         self.image = self.image_derecha
         self.ancho, self.alto = _tamano_caja(factor)
 
     def actualizar(self):
-        # Orienta el sprite según la velocidad horizontal actual.
         if self.vx > 0:
             self.image = self.image_derecha
         elif self.vx < 0:
@@ -112,7 +125,6 @@ class Brainrot:
 
     def buscar_comida_cercana(self, lista_comidas):
         comidas_listas = [c for c in lista_comidas if c.y >= c.y_destino]
-
         if not comidas_listas:
             self.estado = "paseando"
             self.comida_objetivo = None
@@ -120,12 +132,10 @@ class Brainrot:
 
         comida_mas_cercana = None
         distancia_minima = float("inf")
-
         for comida in comidas_listas:
             dx = comida.x - self.x
             dy = comida.y - self.y
-            distancia = (dx ** 2 + dy ** 2) ** 0.5
-
+            distancia = (dx**2 + dy**2)**0.5
             if distancia < distancia_minima:
                 distancia_minima = distancia
                 comida_mas_cercana = comida
@@ -168,9 +178,11 @@ class Brainrot:
                 else:
                     self.vy = 4 if distancia_y > 0 else -4
 
+        # Aplicar paso
         self.x += self.vx
         self.y += self.vy
 
+        # Colisiones
         if self.x <= 0:
             self.x = 0
             self.vx *= -1
@@ -185,20 +197,41 @@ class Brainrot:
             self.y = ALTO - self.alto
             self.vy *= -1
 
+        # Mordisco / colisión con comida
         if self.estado == "buscando_comida" and self.comida_objetivo:
             rect_brain = pygame.Rect(self.x, self.y, self.ancho, self.alto)
-            rect_comida = pygame.Rect(
-                self.comida_objetivo.x, self.comida_objetivo.y,
-                self.comida_objetivo.ancho, self.comida_objetivo.alto,
-            )
-
+            rect_comida = pygame.Rect(self.comida_objetivo.x, self.comida_objetivo.y, self.comida_objetivo.ancho, self.comida_objetivo.alto)
             if rect_brain.colliderect(rect_comida):
-                lista_comidas.remove(self.comida_objetivo)
+                if self.comida_objetivo in lista_comidas:
+                    lista_comidas.remove(self.comida_objetivo)
                 self.comida_objetivo = None
                 self.estado = "paseando"
                 self.hambre = 100
+                self.saltar()
 
         self.actualizar()
+
+        # Avance de animacion
+        if self.vx > 0.3:
+            self.mirando = 1
+        elif self.vx < -0.3:
+            self.mirando = -1
+
+        self.moviendo = (self.vx * self.vx + self.vy * self.vy) ** 0.5 > 0.4
+        if self.ESTILO == "float":
+            self.fase_anim += VEL_FLOT
+        elif self.moviendo:
+            self.fase_anim += VEL_PASO
+
+        if self.saltando:
+            self.salto_t += 1
+            if self.salto_t >= SALTO_FRAMES:
+                self.saltando = False
+                self.salto_t = 0.0
+
+    def saltar(self):
+        self.saltando = True
+        self.salto_t = 0.0
 
     def vivir(self, lista_monedas):
         self.hambre -= 0.015
@@ -235,15 +268,45 @@ class Brainrot:
         ))
 
     def dibujar(self, superficie):
-        if self.image is not None:
-            superficie.blit(self.image, (int(self.x), int(self.y)))
+        # Dibuja sprite animado si existe, si no, rectangulo
+        try:
+            imagen = cargar_sprite(self.SPRITE, self.mirando)
+        except Exception:
+            imagen = None
+
+        if imagen is None:
+            pygame.draw.rect(superficie, self.color, (int(self.x), int(self.y), self.ancho, self.alto))
+            return
+
+        cx = int(self.x) + self.ancho // 2
+        base_y = int(self.y) + self.alto
+
+        salto = 0.0
+        if self.saltando:
+            p = self.salto_t / SALTO_FRAMES
+            salto = SALTO_ALTURA * math.sin(math.pi * p)
+
+        if self.ESTILO == "float":
+            bob = BOB * math.sin(self.fase_anim)
+            pitch = PITCH * math.sin(self.fase_anim)
+            dibujar_sombra(superficie, cx, base_y, imagen.get_width())
+            ancla = (cx, base_y - HOVER - bob - salto)
+            blit_rotado(superficie, imagen, ancla, pitch, "centro")
         else:
-            pygame.draw.rect(
-                superficie, self.color, (int(self.x), int(self.y), self.ancho, self.alto),
-            )
+            if self.moviendo:
+                ang = TILT * math.sin(self.fase_anim)
+                lift = HOP * abs(math.sin(self.fase_anim))
+            else:
+                ang = 0.0
+                lift = 0.0
+            ancla = (cx, base_y - lift - salto)
+            blit_rotado(superficie, imagen, ancla, ang, "pies")
 
 
 class BrainrotA(Brainrot):
+    SPRITE = "brainrot_a.png"
+    ESTILO = "walk"
+
     def __init__(self, x, y):
         super().__init__(x, y)
         datos = TIPOS_BRAINROT["A"]
@@ -258,6 +321,9 @@ class BrainrotA(Brainrot):
 
 
 class BrainrotB(Brainrot):
+    SPRITE = "brainrot_b.png"
+    ESTILO = "walk"
+
     def __init__(self, x, y):
         super().__init__(x, y)
         datos = TIPOS_BRAINROT["B"]
@@ -272,6 +338,9 @@ class BrainrotB(Brainrot):
 
 
 class BrainrotC(Brainrot):
+    SPRITE = "brainrot_c.png"
+    ESTILO = "float"
+
     def __init__(self, x, y):
         super().__init__(x, y)
         datos = TIPOS_BRAINROT["C"]
