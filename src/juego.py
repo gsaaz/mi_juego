@@ -1,86 +1,16 @@
-import os
 import pygame
-import random
-from src.constantes import (ANCHO, ALTO, LINEA_HORIZONTE, FPS, 
-                            NEGRO, BLANCO, ROJO)
-from src.brainrot import BrainrotA, BrainrotB, BrainrotC, Brainrot, TAMANO_MAX_BRAINROT
+from src.constantes import (ANCHO, ALTO, FPS, ROJO)
+from src.brainrot import BrainrotA, Brainrot
 from src.comida import Comida
 from src.moneda import Moneda
-from src.fondo import precargar_fondo, dibujar_fondo_cielo
-from src.interfaz import dibujar_hud_brainrot, dibujar_game_over, dibujar_indicador_monedas, Tienda
+from src.fondo import precargar_fondo, preparar_valla, preparar_prado, dibujar_escenario
+from src.interfaz import (dibujar_hud_brainrot, dibujar_game_over, dibujar_indicador_monedas,
+                           Tienda, COSTO_BRAINROT)
 from src.guardado import guardar_partida, cargar_partida
 from src.menu import MenuInicio
 from src.audio import iniciar_musica_fondo, detener_musica_fondo, precargar_sfx, reproducir_recolectar_moneda
 from src.fuentes import obtener_fuente, TAMANO_NORMAL
 
-COSTO_BRAINROT = 50
-TAMANO_BLOQUE = 32
-ANCHO_VALLA = 64
-ALTO_VALLA = 48
-OFFSET_VALLA_Y = 16  # La base de la valla se hunde en el pasto (LINEA_HORIZONTE - OFFSET)
-RUTAS_PASTO = [
-    os.path.join(os.path.dirname(__file__), "assets"),
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
-]
-RUTAS_VALLA = [
-    os.path.join(os.path.dirname(__file__), "assets"),
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
-]
-NOMBRES_VALLA = ("valla.png", "valla.jpg", "fence.png", "fence.jpg")
-
-def _resolver_ruta_valla():
-    # Busca el sprite de la valla en src/assets o assets/sprites.
-    for carpeta in RUTAS_VALLA:
-        for nombre in NOMBRES_VALLA:
-            ruta = os.path.join(carpeta, nombre)
-            if os.path.exists(ruta):
-                return ruta
-    raise FileNotFoundError(
-        f"No se encontró la valla (valla.png / fence.jpg) en: {', '.join(RUTAS_VALLA)}"
-    )
-
-def _cargar_valla():
-    # Carga y escala el segmento de valla (3 postes) para repetirlo a lo largo del horizonte.
-    imagen = pygame.image.load(_resolver_ruta_valla()).convert_alpha()
-    return pygame.transform.scale(imagen, (ANCHO_VALLA, ALTO_VALLA))
-
-def _construir_segmentos_valla(sprite_valla):
-    # Precalcula los segmentos de valla para cubrir todo el ancho sin huecos.
-    segmentos = []
-    x = 0
-    while x < ANCHO:
-        ancho_restante = ANCHO - x
-        if ancho_restante >= ANCHO_VALLA:
-            segmentos.append((x, sprite_valla))
-        else:
-            segmentos.append((
-                x,
-                sprite_valla.subsurface((0, 0, ancho_restante, ALTO_VALLA)).copy(),
-            ))
-        x += ANCHO_VALLA
-    return segmentos
-
-def _dibujar_valla(superficie, segmentos_valla):
-    # Pinta la cerca sobre el horizonte, tapando la unión entre cielo y pasto.
-    pos_y = LINEA_HORIZONTE - OFFSET_VALLA_Y
-    for x, imagen in segmentos_valla:
-        superficie.blit(imagen, (x, pos_y))
-
-def _resolver_ruta_textura(nombre_base):
-    # Busca la textura en src/assets o assets/sprites (.jpg o .png).
-    for carpeta in RUTAS_PASTO:
-        for extension in (".jpg", ".jpeg", ".png"):
-            ruta = os.path.join(carpeta, f"{nombre_base}{extension}")
-            if os.path.exists(ruta):
-                return ruta
-    raise FileNotFoundError(
-        f"No se encontró la textura '{nombre_base}' en: {', '.join(RUTAS_PASTO)}"
-    )
-
-def _cargar_textura_pasto(nombre_base):
-    # Carga una textura del prado y la escala a un bloque de 32×32 píxeles.
-    imagen = pygame.image.load(_resolver_ruta_textura(nombre_base)).convert()
-    return pygame.transform.scale(imagen, (TAMANO_BLOQUE, TAMANO_BLOQUE))
 
 def _es_game_over(dinero, lista_brainrots):
     # Derrota: no hay criaturas vivas y no alcanza el dinero para comprar una nueva.
@@ -96,49 +26,20 @@ def _iniciar_partida_nueva(tienda):
     tienda.comida_seleccionada = "A"
     return {
         "dinero": 20,
-        "lista_brainrots": [
-            BrainrotA(400, 350)
-        ],
+        "lista_brainrots": [BrainrotA(400, 350)],
         "lista_comidas": [],
         "lista_monedas": [],
     }
 
-def _celda_textura(textura, ancho, alto):
-    # Ajusta el bloque al borde del prado (solo al generar el mapa, no en el bucle de dibujo).
-    if ancho == TAMANO_BLOQUE and alto == TAMANO_BLOQUE:
-        return textura
-    return textura.subsurface((0, 0, ancho, alto)).copy()
-
-def _generar_mapa_prado(tile_pasto_base, tile_pasto_flores, tile_pasto_alto):
-    # Construye una sola vez la matriz estática del prado (85% base, 10% flores, 5% alto).
-    mapa_prado = []
-
-    for y in range(LINEA_HORIZONTE, ALTO, TAMANO_BLOQUE):
-        for x in range(0, ANCHO, TAMANO_BLOQUE):
-            ancho = min(TAMANO_BLOQUE, ANCHO - x)
-            alto = min(TAMANO_BLOQUE, ALTO - y)
-            probabilidad = random.random()
-
-            if probabilidad < 0.85:
-                textura = tile_pasto_base
-            elif probabilidad < 0.95:
-                textura = tile_pasto_flores
-            else:
-                textura = tile_pasto_alto
-
-            mapa_prado.append((x, y, _celda_textura(textura, ancho, alto)))
-
-    return mapa_prado
-
 def ejecutar_juego():
     pygame.init() # Despierta submodulos internos de Pygame
-    ventana = pygame.display.set_mode((ANCHO, ALTO)) 
-    pygame.display.set_caption("Villa Brainrot - Proyecto Final") 
+    ventana = pygame.display.set_mode((ANCHO, ALTO))
+    pygame.display.set_caption("Villa Brainrot - Proyecto Final")
 
     iniciar_musica_fondo()
     precargar_sfx()
 
-    precargar_fondo()
+    precargar_fondo()  # Precarga el cielo antes de mostrar el menú
     menu = MenuInicio(ventana)
     menu.ejecutar()
     datos_cargados = menu.obtener_datos_cargados()
@@ -147,23 +48,18 @@ def ejecutar_juego():
     Comida.precargar()
     Brainrot.precargar()
 
-    tile_pasto_base = _cargar_textura_pasto("grass_1")
-    tile_pasto_flores = _cargar_textura_pasto("grass_2")
-    tile_pasto_alto = _cargar_textura_pasto("grass_3")
-    mapa_prado = _generar_mapa_prado(tile_pasto_base, tile_pasto_flores, tile_pasto_alto)
-
-    sprite_valla = _cargar_valla()
-    segmentos_valla = _construir_segmentos_valla(sprite_valla)
+    # Preparación única del escenario estático (prado y valla)
+    mapa_prado      = preparar_prado()
+    segmentos_valla = preparar_valla()
 
     reloj = pygame.time.Clock()
-
     fuente_chica = obtener_fuente(TAMANO_NORMAL)
 
     # Entidades y Estado
-    lista_comidas = [] # Creamos la lista dinámica que guardará las galletas vivas
+    lista_comidas = []
     lista_monedas = []
     frames_alerta_dinero = 0
-    frames_alerta_stock = 0
+    frames_alerta_stock  = 0
 
     tienda = Tienda()
 
@@ -183,98 +79,37 @@ def ejecutar_juego():
     corriendo = True  # Variable de control (Flag) que mantiene el juego encendido
     while corriendo:
         reloj.tick(FPS)
-        
+
         # (a) EVENTOS (Interacción del Usuario con la PC)
-        
         for evento in pygame.event.get():
-             if evento.type == pygame.QUIT:
-                  guardar_partida(dinero, tienda, lista_brainrots)
-                  corriendo = False
-                  continue
-             
-             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            if evento.type == pygame.QUIT:
+                guardar_partida(dinero, tienda, lista_brainrots)
+                corriendo = False
+                continue
+
+            if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 if game_over:
                     estado_inicial = _iniciar_partida_nueva(tienda)
-                    dinero = estado_inicial["dinero"]
+                    dinero          = estado_inicial["dinero"]
                     lista_brainrots = estado_inicial["lista_brainrots"]
-                    lista_comidas = estado_inicial["lista_comidas"]
-                    lista_monedas = estado_inicial["lista_monedas"]
+                    lista_comidas   = estado_inicial["lista_comidas"]
+                    lista_monedas   = estado_inicial["lista_monedas"]
                     frames_alerta_dinero = 0
-                    frames_alerta_stock = 0
+                    frames_alerta_stock  = 0
                     game_over = False
                     guardar_partida(dinero, tienda, lista_brainrots)
                     continue
 
                 pos_mouse = evento.pos
 
-                # CAPA 1: INTERFAZ DE USUARIO
-                click_en_tienda = False
-
-                if tienda.btn_pestana_comida.collidepoint(pos_mouse):
-                    tienda.pestana_activa = "Comida"
-                    click_en_tienda = True
-                elif tienda.btn_pestana_brainrots.collidepoint(pos_mouse):
-                    tienda.pestana_activa = "Brainrots"
-                    click_en_tienda = True
-                elif tienda.btn_sel_A.collidepoint(pos_mouse):
-                    tienda.comida_seleccionada = "A"
-                    click_en_tienda = True
-                elif tienda.btn_sel_B.collidepoint(pos_mouse):
-                    tienda.comida_seleccionada = "B"
-                    click_en_tienda = True
-                elif tienda.btn_sel_C.collidepoint(pos_mouse):
-                    tienda.comida_seleccionada = "C"
-                    click_en_tienda = True
-                elif tienda.btn_compra_A.collidepoint(pos_mouse):
-                    click_en_tienda = True
-                    if tienda.pestana_activa == "Brainrots":
-                        if dinero >= COSTO_BRAINROT:
-                            dinero -= COSTO_BRAINROT
-                            x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
-                            y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
-                            lista_brainrots.append(BrainrotA(x, y))
-                        else:
-                            frames_alerta_dinero = 120
-                    else:
-                        if dinero >= 10:
-                            dinero -= 10
-                            tienda.cant_A += 1
-                        else:
-                            frames_alerta_dinero = 120
-                elif tienda.btn_compra_B.collidepoint(pos_mouse):
-                    click_en_tienda = True
-                    if tienda.pestana_activa == "Brainrots":
-                        if dinero >= COSTO_BRAINROT:
-                            dinero -= COSTO_BRAINROT
-                            x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
-                            y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
-                            lista_brainrots.append(BrainrotB(x, y))
-                        else:
-                            frames_alerta_dinero = 120
-                    else:
-                        if dinero >= 10:
-                            dinero -= 10
-                            tienda.cant_B += 1
-                        else:
-                            frames_alerta_dinero = 120
-                elif tienda.btn_compra_C.collidepoint(pos_mouse):
-                    click_en_tienda = True
-                    if tienda.pestana_activa == "Brainrots":
-                        if dinero >= COSTO_BRAINROT:
-                            dinero -= COSTO_BRAINROT
-                            x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
-                            y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
-                            lista_brainrots.append(BrainrotC(x, y))
-                        else:
-                            frames_alerta_dinero = 120
-                    else:
-                        if dinero >= 10:
-                            dinero -= 10
-                            tienda.cant_C += 1
-                        else:
-                            frames_alerta_dinero = 120
-
-                if click_en_tienda:
+                # CAPA 1: INTERFAZ DE USUARIO — delega toda la lógica de la tienda
+                resultado_tienda = tienda.procesar_click(pos_mouse, dinero)
+                if resultado_tienda["click_consumido"]:
+                    dinero = resultado_tienda["dinero"]
+                    if resultado_tienda["frames_alerta_dinero"]:
+                        frames_alerta_dinero = resultado_tienda["frames_alerta_dinero"]
+                    if resultado_tienda["nuevo_brainrot"]:
+                        lista_brainrots.append(resultado_tienda["nuevo_brainrot"])
                     continue
 
                 # CAPA 2: OBJETOS INTERACTIVOS
@@ -287,12 +122,12 @@ def ejecutar_juego():
                         reproducir_recolectar_moneda()
                         moneda_recogida = True
                         break
-                
+
                 if moneda_recogida:
-                     continue
-                
-                # CAPA 3: ACCIONES DEL MUNDO (cielo o pasto)
-                tipo = tienda.comida_seleccionada
+                    continue
+
+                # CAPA 3: ACCIONES DEL MUNDO (lanzar comida al pasto)
+                tipo  = tienda.comida_seleccionada
                 stock = {"A": tienda.cant_A, "B": tienda.cant_B, "C": tienda.cant_C}[tipo]
 
                 if stock > 0:
@@ -302,8 +137,7 @@ def ejecutar_juego():
                         tienda.cant_B -= 1
                     else:
                         tienda.cant_C -= 1
-                    nueva_comida = Comida(pos_mouse[0], pos_mouse[1], tipo)
-                    lista_comidas.append(nueva_comida)
+                    lista_comidas.append(Comida(pos_mouse[0], pos_mouse[1], tipo))
                 else:
                     frames_alerta_stock = 120
 
@@ -312,9 +146,9 @@ def ejecutar_juego():
             for brainrot in lista_brainrots:
                 if brainrot.vivo:
                     brainrot.buscar_comida_cercana(lista_comidas)
-                    brainrot.mover(lista_comidas) # Pasamos la lista corregida aquí
+                    brainrot.mover(lista_comidas)
                     brainrot.vivir(lista_monedas)
-            
+
             for comida in lista_comidas:
                 comida.caer()
 
@@ -323,51 +157,46 @@ def ejecutar_juego():
 
             if _es_game_over(dinero, lista_brainrots):
                 game_over = True
-    
-        # (c) DIBUJAR
-        dibujar_fondo_cielo(ventana)
 
+        # (c) DIBUJAR — cielo, prado y valla en una sola llamada
+        dibujar_escenario(ventana, mapa_prado, segmentos_valla)
+
+        # Alertas flotantes (zona del cielo, no tapan el prado)
         y_alertas = tienda.panel_superior.bottom + 12
         hay_alerta_dinero = frames_alerta_dinero > 0
-        hay_alerta_stock = frames_alerta_stock > 0
+        hay_alerta_stock  = frames_alerta_stock  > 0
 
         if hay_alerta_dinero:
-            texto_alerta = "¡FONDOS INSUFICIENTES!"
+            texto_alerta  = "¡FONDOS INSUFICIENTES!"
             imagen_alerta = fuente_chica.render(texto_alerta, True, ROJO)
             ventana.blit(imagen_alerta, ((ANCHO - imagen_alerta.get_width()) // 2, y_alertas))
             frames_alerta_dinero -= 1
 
         if hay_alerta_stock:
-            texto_alerta = "¡SIN STOCK!"
+            texto_alerta  = "¡SIN STOCK!"
             imagen_alerta = fuente_chica.render(texto_alerta, True, ROJO)
             y_alerta = y_alertas + 32 if hay_alerta_dinero else y_alertas
             ventana.blit(imagen_alerta, ((ANCHO - imagen_alerta.get_width()) // 2, y_alerta))
             frames_alerta_stock -= 1
 
-        for x, y, imagen_pasto in mapa_prado:
-            ventana.blit(imagen_pasto, (x, y))
-
-        _dibujar_valla(ventana, segmentos_valla)
-
+        # Entidades
         for brainrot in lista_brainrots:
             if brainrot.vivo:
-                    brainrot.dibujar(ventana)
-                    dibujar_hud_brainrot(ventana,fuente_chica,brainrot)
-        # Le ordenamos a la criatura que dibuje su cuerpo blanco en la ventana
-        # Dibujamos el texto flotante con las estadísticas vitales de la mascota
+                brainrot.dibujar(ventana)
+                dibujar_hud_brainrot(ventana, fuente_chica, brainrot)
 
         for moneda in lista_monedas:
             moneda.dibujar(ventana)
-        
+
         for comida in lista_comidas:
-                comida.dibujar(ventana)
+            comida.dibujar(ventana)
 
         tienda.dibujar(ventana, fuente_chica)
         dibujar_indicador_monedas(ventana, fuente_chica, dinero, tienda.rect_monedas)
 
         if game_over:
             dibujar_game_over(ventana)
-                
+
         pygame.display.flip()
         # Envía el lienzo finalizado a la tarjeta de video para que lo muestre en el monitor
 
