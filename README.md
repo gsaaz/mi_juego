@@ -1,16 +1,16 @@
 # Villa Brainrot 🎮
 
-Un divertido juego casual de simulación desarrollado en **Python** y **Pygame** donde gestionás criaturas, recolectás monedas y administrás una tienda para mantener tu villa con vida.
+Un divertido juego casual de simulación desarrollado en **Python** y **Pygame** donde gestionas criaturas, recolectas monedas y administras una tienda para mantener tu villa con vida.
 
 ---
 
 ## Características principales
 
-- **Sistema de tienda por pestañas** — Comprá comida o nuevos Brainrots desde un panel superior con pestañas *Comida* y *Brainrots*, cada una con tres tipos disponibles (A, B, C).
-- **IA de criaturas** — Cada Brainrot recorre el prado buscando la comida más cercana de forma autónoma. Si no come, su salud baja hasta morir.
-- **Recolección de monedas** — Las criaturas generan monedas al comer. Hacé clic sobre ellas antes de que desaparezcan para sumar saldo.
-- **Guardado automático en JSON** — El estado completo de la partida (dinero, stock, criaturas vivas con su salud) se guarda automáticamente en `datos/partida.json` al cerrar el juego y se restaura al volver a abrirlo.
-- **Game Over recuperable** — Si te quedás sin criaturas vivas y sin dinero para comprar una nueva, aparece la pantalla de Game Over. Un clic reinicia la partida desde cero.
+- **Sistema de tienda por pestañas** — Compra comida o nuevos Brainrots desde un panel superior con pestañas *Comida* y *Brainrots*, cada una con tres tipos disponibles (67, tt, bc).
+- **IA de criaturas** — Cada Brainrot recorre el prado buscando la comida más cercana de forma autónoma. Si su hambre llega a 0, su salud baja hasta morir.
+- **Recolección de monedas** — Las criaturas generan monedas al estar bien alimentados.
+- **Guardado automático en JSON** — El estado completo de la partida (dinero, stock, criaturas vivas con su salud) se guarda automáticamente en `datos/partida.json` al cerrar el juego y se restaura al cargar partida desde el menu principal
+- **Game Over recuperable** — Si te quedas sin criaturas vivas y sin dinero para comprar una nueva, aparece la pantalla de Game Over. Un clic reinicia la partida desde cero.
 - **Arquitectura modular** — Cada responsabilidad está aislada en su propio módulo dentro de `src/`, lo que hace el código fácil de leer, extender y mantener.
 
 ---
@@ -81,15 +81,15 @@ python main.py
 
 | Acción | Cómo hacerlo |
 |---|---|
-| **Lanzar comida** | Seleccioná un tipo (A / B / C) en el panel de inventario y hacé clic en el prado |
+| **Lanzar comida** | Selecciona un tipo (A / B / C) en el panel de inventario y haz clic en el prado |
 | **Comprar comida** | Pestaña *Comida* → botón de compra (cuesta $10 por unidad) |
 | **Comprar un Brainrot** | Pestaña *Brainrots* → botón de compra (cuesta $50) |
-| **Recolectar monedas** | Hacé clic sobre las monedas que aparecen en el prado |
+| **Recolectar monedas** | Haz clic sobre las monedas que aparecen en el prado |
 | **Cerrar el juego** | La partida se guarda automáticamente al cerrar la ventana |
 
 ### Condición de derrota
 
-Si **no tenés criaturas vivas** y tu saldo es **menor a $50** (sin poder comprar una nueva), el juego muestra la pantalla de **Game Over**. Hacé clic en cualquier lugar para reiniciar.
+Si **no tienes criaturas vivas** y tu saldo es **menor a $50** (sin poder comprar una nueva), el juego muestra la pantalla de **Game Over**. Haz clic en cualquier lugar para reiniciar.
 
 ---
 
