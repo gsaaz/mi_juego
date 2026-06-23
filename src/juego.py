@@ -1,15 +1,19 @@
+import random
 import pygame
-from src.constantes import (ANCHO, ALTO, FPS, ROJO)
-from src.brainrot import BrainrotA, Brainrot
+from src.constantes import (ANCHO, ALTO, LINEA_HORIZONTE, FPS, ROJO)
+from src.brainrot import BrainrotA, BrainrotB, BrainrotC, Brainrot, TAMANO_MAX_BRAINROT
 from src.comida import Comida
 from src.moneda import Moneda
-from src.fondo import precargar_fondo, preparar_valla, preparar_prado, dibujar_escenario
+from src.fondo import precargar_fondo, inicializar_entorno, dibujar_todo_el_entorno
 from src.interfaz import (dibujar_hud_brainrot, dibujar_game_over, dibujar_indicador_monedas,
                            Tienda, COSTO_BRAINROT)
 from src.guardado import guardar_partida, cargar_partida
 from src.menu import MenuInicio
 from src.audio import iniciar_musica_fondo, detener_musica_fondo, precargar_sfx, reproducir_recolectar_moneda
 from src.fuentes import obtener_fuente, TAMANO_NORMAL
+
+# Mapa de tipo de brainrot (string) a su clase concreta, usado al procesar compras.
+_CLASES_BRAINROT = {"A": BrainrotA, "B": BrainrotB, "C": BrainrotC}
 
 
 def _es_game_over(dinero, lista_brainrots):
@@ -48,9 +52,8 @@ def ejecutar_juego():
     Comida.precargar()
     Brainrot.precargar()
 
-    # Preparación única del escenario estático (prado y valla)
-    mapa_prado      = preparar_prado()
-    segmentos_valla = preparar_valla()
+    # Carga única de todo el escenario estático (prado + valla)
+    mapa_prado, segmentos_valla = inicializar_entorno()
 
     reloj = pygame.time.Clock()
     fuente_chica = obtener_fuente(TAMANO_NORMAL)
@@ -102,14 +105,22 @@ def ejecutar_juego():
 
                 pos_mouse = evento.pos
 
-                # CAPA 1: INTERFAZ DE USUARIO — delega toda la lógica de la tienda
-                resultado_tienda = tienda.procesar_click(pos_mouse, dinero)
-                if resultado_tienda["click_consumido"]:
-                    dinero = resultado_tienda["dinero"]
-                    if resultado_tienda["frames_alerta_dinero"]:
-                        frames_alerta_dinero = resultado_tienda["frames_alerta_dinero"]
-                    if resultado_tienda["nuevo_brainrot"]:
-                        lista_brainrots.append(resultado_tienda["nuevo_brainrot"])
+                # CAPA 1: INTERFAZ DE USUARIO
+                # La tienda evalúa sus controles y reporta qué cambió.
+                # Retorna None si el click no fue en ella.
+                resultado_compra = tienda.procesar_click(pos_mouse, dinero)
+                if resultado_compra is not None:
+                    dinero = resultado_compra["dinero"]
+                    if resultado_compra["alerta_dinero"]:
+                        frames_alerta_dinero = resultado_compra["alerta_dinero"]
+                    if resultado_compra["alerta_stock"]:
+                        frames_alerta_stock = resultado_compra["alerta_stock"]
+                    if resultado_compra["spawn_brainrot"]:
+                        # El juego elige la posición y la clase concreta a instanciar
+                        tipo = resultado_compra["spawn_brainrot"]
+                        x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
+                        y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
+                        lista_brainrots.append(_CLASES_BRAINROT[tipo](x, y))
                     continue
 
                 # CAPA 2: OBJETOS INTERACTIVOS
@@ -159,7 +170,7 @@ def ejecutar_juego():
                 game_over = True
 
         # (c) DIBUJAR — cielo, prado y valla en una sola llamada
-        dibujar_escenario(ventana, mapa_prado, segmentos_valla)
+        dibujar_todo_el_entorno(ventana, mapa_prado, segmentos_valla)
 
         # Alertas flotantes (zona del cielo, no tapan el prado)
         y_alertas = tienda.panel_superior.bottom + 12

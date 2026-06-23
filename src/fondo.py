@@ -174,19 +174,26 @@ def _generar_mapa_prado(tile_pasto_base, tile_pasto_flores, tile_pasto_alto):
 
 # ─── API PÚBLICA DEL ESCENARIO ────────────────────────────────────────────────
 
-def preparar_valla():
+def _preparar_valla():
     # Carga la valla y calcula los segmentos una sola vez antes del bucle principal.
     sprite_valla = _cargar_valla()
     return _construir_segmentos_valla(sprite_valla)
 
-def preparar_prado():
+def _preparar_prado():
     # Carga los tiles y genera el mapa estático del prado una sola vez antes del bucle.
     tile_base   = _cargar_textura_pasto("grass_1")
     tile_flores = _cargar_textura_pasto("grass_2")
     tile_alto   = _cargar_textura_pasto("grass_3")
     return _generar_mapa_prado(tile_base, tile_flores, tile_alto)
 
-def dibujar_escenario(superficie, mapa_prado, segmentos_valla):
+def inicializar_entorno():
+    # Carga todas las texturas del escenario y retorna (mapa_prado, segmentos_valla).
+    # Debe llamarse una sola vez, después de pygame.init(), antes del bucle principal.
+    mapa_prado      = _preparar_prado()
+    segmentos_valla = _preparar_valla()
+    return mapa_prado, segmentos_valla
+
+def dibujar_todo_el_entorno(superficie, mapa_prado, segmentos_valla):
     # Dibuja en orden: cielo → prado → valla sobre el horizonte.
     dibujar_fondo_cielo(superficie)
     for x, y, imagen_pasto in mapa_prado:

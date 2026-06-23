@@ -1,8 +1,6 @@
-import random
 import pygame
 from src.constantes import (BLANCO, NEGRO, AMARILLO_ORO, MARRON, ROJO,
-                            ANCHO, ALTO, LINEA_HORIZONTE, TIPOS_BRAINROT)
-from src.brainrot import BrainrotA, BrainrotB, BrainrotC, TAMANO_MAX_BRAINROT
+                            ANCHO, ALTO, TIPOS_BRAINROT)
 from src.fuentes import obtener_fuente, obtener_fuente_para_rect, TAMANO_MINIMO, TAMANO_PEQUENO, TAMANO_NORMAL, TAMANO_TITULO
 
 # Costos de compra centralizados aquí porque la Tienda es dueña de los precios.
@@ -275,72 +273,65 @@ class Tienda:
             )
 
     def procesar_click(self, pos_mouse, dinero):
-        # Procesa un click del mouse sobre la tienda.
-        # Retorna dict con: click_consumido, dinero, frames_alerta_dinero, nuevo_brainrot.
-        resultado = {
-            "click_consumido":    False,
-            "dinero":             dinero,
-            "frames_alerta_dinero": 0,
-            "nuevo_brainrot":     None,
-        }
+        # Evalúa si el click cayó sobre algún control de la tienda.
+        # Retorna None si el click no fue en la tienda (para que el juego continúe
+        # procesando las capas 2 y 3).
+        # Si fue en la tienda, retorna un dict con los cambios de estado:
+        #   dinero       → nuevo saldo después de la operación
+        #   alerta_dinero → frames a mostrar la alerta de fondos insuficientes (0 si no)
+        #   alerta_stock  → frames a mostrar la alerta de sin stock (0 si no)
+        #   spawn_brainrot → "A", "B" o "C" si hay que spawnear uno; None si no
 
-        # Pestañas de navegación
+        _sin_cambios = {"dinero": dinero, "alerta_dinero": 0, "alerta_stock": 0, "spawn_brainrot": None}
+
+        # --- Pestañas de navegación ---
         if self.btn_pestana_comida.collidepoint(pos_mouse):
             self.pestana_activa = "Comida"
-            resultado["click_consumido"] = True
-            return resultado
+            return _sin_cambios
 
         if self.btn_pestana_brainrots.collidepoint(pos_mouse):
             self.pestana_activa = "Brainrots"
-            resultado["click_consumido"] = True
-            return resultado
+            return _sin_cambios
 
-        # Selectores de tipo de comida activa
+        # --- Selectores de comida activa ---
         if self.btn_sel_A.collidepoint(pos_mouse):
             self.comida_seleccionada = "A"
-            resultado["click_consumido"] = True
-            return resultado
+            return _sin_cambios
 
         if self.btn_sel_B.collidepoint(pos_mouse):
             self.comida_seleccionada = "B"
-            resultado["click_consumido"] = True
-            return resultado
+            return _sin_cambios
 
         if self.btn_sel_C.collidepoint(pos_mouse):
             self.comida_seleccionada = "C"
-            resultado["click_consumido"] = True
-            return resultado
+            return _sin_cambios
 
-        # Botones de compra (A, B, C) — comportamiento distinto según pestaña activa
+        # --- Botones de compra (A / B / C) ---
         botones = {"A": self.btn_compra_A, "B": self.btn_compra_B, "C": self.btn_compra_C}
-        clases  = {"A": BrainrotA, "B": BrainrotB, "C": BrainrotC}
 
         for tipo, rect in botones.items():
             if not rect.collidepoint(pos_mouse):
                 continue
 
-            resultado["click_consumido"] = True
-
             if self.pestana_activa == "Brainrots":
                 if dinero >= COSTO_BRAINROT:
-                    resultado["dinero"] = dinero - COSTO_BRAINROT
-                    x = random.randint(0, ANCHO - TAMANO_MAX_BRAINROT)
-                    y = random.randint(LINEA_HORIZONTE, ALTO - TAMANO_MAX_BRAINROT)
-                    resultado["nuevo_brainrot"] = clases[tipo](x, y)
-                else:
-                    resultado["frames_alerta_dinero"] = 120
+                    return {
+                        "dinero":        dinero - COSTO_BRAINROT,
+                        "alerta_dinero": 0,
+                        "alerta_stock":  0,
+                        "spawn_brainrot": tipo,  # el juego instancia la clase y elige la posición
+                    }
+                return {"dinero": dinero, "alerta_dinero": 120, "alerta_stock": 0, "spawn_brainrot": None}
+
             else:  # pestaña Comida
                 if dinero >= COSTO_COMIDA:
-                    resultado["dinero"] = dinero - COSTO_COMIDA
                     if tipo == "A":
                         self.cant_A += 1
                     elif tipo == "B":
                         self.cant_B += 1
                     else:
                         self.cant_C += 1
-                else:
-                    resultado["frames_alerta_dinero"] = 120
+                    return {"dinero": dinero - COSTO_COMIDA, "alerta_dinero": 0, "alerta_stock": 0, "spawn_brainrot": None}
+                return {"dinero": dinero, "alerta_dinero": 120, "alerta_stock": 0, "spawn_brainrot": None}
 
-            return resultado
-
-        return resultado
+        return None  # el click no cayó sobre ningún control de la tienda
