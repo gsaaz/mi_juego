@@ -3,6 +3,7 @@ import pygame
 import random
 from src.constantes import ANCHO, ALTO, LINEA_HORIZONTE, BLANCO, TIPOS_BRAINROT
 from src.moneda import Moneda, ANCHO_MONEDA
+from src.audio import reproducir_crunch
 
 RUTAS_SPRITES = [
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "sprites"),
@@ -197,6 +198,7 @@ class Brainrot:
                 self.comida_objetivo = None
                 self.estado = "paseando"
                 self.hambre = 100
+                reproducir_crunch()
 
         self.actualizar()
 

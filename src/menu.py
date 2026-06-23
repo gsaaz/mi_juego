@@ -5,6 +5,7 @@ from src.constantes import ANCHO, ALTO, FPS, BLANCO, ROJO
 from src.fondo import dibujar_fondo_cielo_completo, precargar_fondo_pantalla_completa
 from src.guardado import RUTA_PARTIDA, cargar_partida
 from src.fuentes import obtener_fuente_menu, TAMANO_MENU_TITULO, TAMANO_MENU_OPCION, TAMANO_MENU_ALERTA
+from src.audio import detener_musica_fondo
 
 COLOR_OPCION = BLANCO
 COLOR_OPCION_ACTIVA = (255, 215, 0)
@@ -161,6 +162,7 @@ class MenuInicio:
             pygame.display.flip()
 
         if self.accion == "salir":
+            detener_musica_fondo()
             pygame.quit()
             sys.exit()
 
