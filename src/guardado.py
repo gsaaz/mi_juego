@@ -2,8 +2,8 @@ import json
 import os
 from src.brainrot import BrainrotA, BrainrotB, BrainrotC
 
-# Ruta del archivo de guardado en la raíz del proyecto.
-RUTA_PARTIDA = os.path.join(os.path.dirname(os.path.dirname(__file__)), "partida.json")
+# Ruta del archivo de guardado dentro de la carpeta datos/.
+RUTA_PARTIDA = os.path.join(os.path.dirname(os.path.dirname(__file__)), "datos", "partida.json")
 
 CLASES_BRAINROT = {
     "A": BrainrotA,
