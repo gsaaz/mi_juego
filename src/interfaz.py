@@ -9,7 +9,7 @@ def dibujar_indicador_monedas(superficie, fuente, dinero, rect):
     _dibujar_texto_en_rect(superficie, texto_dinero, rect, NEGRO, tamano_inicial=TAMANO_NORMAL, padding=2)
 
 def dibujar_hud_brainrot(superficie, fuente, brainrot):
-    texto_hambre = f"H:{int(brainrot.hambre)}% S:{int(brainrot.salud)}%"
+    texto_hambre = f"{brainrot.nombre} H:{int(brainrot.hambre)}% S:{int(brainrot.salud)}%"
     imagen_texto = fuente.render(texto_hambre, True, BLANCO)
     centro_x = int(brainrot.x) + brainrot.ancho // 2
     x = centro_x - imagen_texto.get_width() // 2
